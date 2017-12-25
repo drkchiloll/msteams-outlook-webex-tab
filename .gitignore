@@ -1,0 +1,10 @@
+.vscode
+.DS_STORE
+node_modules
+.module-cache
+*.log*
+public
+release
+properties.sample.json
+.editorconfig
+package-lock.json

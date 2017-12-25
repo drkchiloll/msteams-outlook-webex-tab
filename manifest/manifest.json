@@ -1,0 +1,32 @@
+{
+  "manifestVersion": "0.4",
+  "appId": "58df201c-5717-4c1f-8250-4ea9c06fbc9b",
+  "developer": {
+    "name": "WWTBD - ",
+    "websiteUrl": "https://4579cec4.ngrok.io/",
+    "termsOfUseUrl": "https://4579cec4.ngrok.io/tou.html",        
+    "privacyUrl": "https://4579cec4.ngrok.io/privacy.html"
+  },
+  "version": "0.3",
+  "validDomains": ["o365.wwtatc.com"],
+    "tabs": [
+      {
+        "id": "57aa06ad-2425-4245-b898-b16216822a57",
+        "name": "WebEx_Calendar",
+        "description": {
+          "short": "WebEx + Outlook Calendar",
+          "full": "Check Calendar with WebEx Meetings"
+        },
+        "icons": {
+          "44": "webex_44.png",
+          "88": "webex_88.png"
+        },
+        "accentColor": "#223344",
+        "configUrl": "https://4579cec4.ngrok.io/config",
+        "canUpdateConfig": true
+      }
+    ],
+  "signInUrl": "https://4579cec4.ngrok.io/auth",
+  "bots": [],
+  "needsIdentity": false
+}
