@@ -8,3 +8,4 @@ release
 properties.sample.json
 .editorconfig
 package-lock.json
+*properties.ts
