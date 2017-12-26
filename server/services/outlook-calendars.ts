@@ -1,7 +1,9 @@
-export function outlookServFactory(graph: any) {
+import { MsGraph } from '../lib';
+
+export function outlookServFactory(graph: MsGraph) {
   const service: any = {};
 
-  service.createEvent = function() {
+  service.createEvent = function(body: any) {
     /*
       {
         subject: Event Title
@@ -15,6 +17,11 @@ export function outlookServFactory(graph: any) {
         }]
       }
     */
+    return graph._request({
+      body,
+      method: 'post',
+      path: '/beta/me/events'
+    });
   };
 
   return service;

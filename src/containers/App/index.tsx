@@ -5,13 +5,16 @@ import {  } from '../../components';
 import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
 
+import { DefaultButton, Label, IButtonProps } from 'office-ui-fabric-react';
+
 import { microsoftTeams } from '../../microsoftTeams';
 
 import { Properties } from '../../properties';
 const {
   AzureApp: {
     clientId, authority, scopes,
-    webApi, tenant, redirectUri
+    webApi, tenant, redirectUri,
+    headers
   }
 } = Properties;
 
@@ -96,6 +99,19 @@ export class App extends React.Component<App.Props, App.State> {
   }
 
   @autobind
+  callServer() {
+    console.log('hi');
+    return $.ajax({
+      url: 'https://4579cec4.ngrok.io/api/outlook-events',
+      method: 'post',
+      headers,
+      data: JSON.stringify({ token: this.state.accessToken })
+    }).then((resp: any) => {
+      console.log(resp);
+    })
+  }
+
+  @autobind
   callApiWithToken({path, accessToken, method='get', todo={}}) {
     return $.ajax({
       url: webApi + path,
@@ -126,7 +142,10 @@ export class App extends React.Component<App.Props, App.State> {
     return (
       <div className={style.normal}>
         {children}
-        <p>Authenticated</p>
+        <DefaultButton
+          primary={true}
+          text={'Add Event'}
+          onClick={this.callServer} />
       </div>
     );
   }
