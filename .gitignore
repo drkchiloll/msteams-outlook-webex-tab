@@ -1,3 +1,4 @@
+**/**/properties.ts
 .vscode
 .DS_STORE
 node_modules
@@ -8,5 +9,3 @@ release
 properties.sample.json
 .editorconfig
 package-lock.json
-src/properties.ts
-server/properties.ts
