@@ -4,8 +4,27 @@ import { RouteComponentProps } from 'react-router';
 import {  } from '../../components';
 import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
+import { initializeIcons } from '@uifabric/icons';
+initializeIcons();
+// initializeIcons('/api/icons/');
 
-import { DefaultButton, Label, IButtonProps } from 'office-ui-fabric-react';
+import * as moment from 'moment';
+import * as momenttz from 'moment-timezone';
+
+import {
+  PrimaryButton,
+  DefaultButton,
+  ButtonType,
+  Label,
+  IButtonProps,
+  Dialog,
+  DialogContent,
+  DialogType,
+  DialogFooter,
+  Nav,
+  Panel,
+  PanelType
+} from 'office-ui-fabric-react';
 
 import { microsoftTeams } from '../../microsoftTeams';
 
@@ -28,6 +47,9 @@ export namespace App {
   export interface State {
     isLoggedIn: boolean;
     accessToken: string;
+    scheduleDialog: boolean;
+    events: any;
+    showPanel: boolean;
   }
 }
 
@@ -50,10 +72,11 @@ export class App extends React.Component<App.Props, App.State> {
         successCallback: (t) => {
           // Note: token is only good for one hour
           this.setState({ accessToken: t });
-          this.callApiWithToken({
-            path: '/beta/me/outlook/events',
-            accessToken: t
-          });
+          this.getEvents();
+          // this.callApiWithToken({
+          //   path: '/beta/me/outlook/events',
+          //   accessToken: t
+          // });
         },
         failureCallback: function (err) { }
       });
@@ -64,7 +87,10 @@ export class App extends React.Component<App.Props, App.State> {
     super(props);
     this.state = {
       isLoggedIn: false,
-      accessToken: null
+      accessToken: null,
+      scheduleDialog: true,
+      events: null,
+      showPanel: false
     };
     microsoftTeams.initialize();
     if(window.self !== window.top) {
@@ -78,11 +104,13 @@ export class App extends React.Component<App.Props, App.State> {
         this.clientApplication
           .loginPopup(scopes)
           .then(this.getAccessToken)
-          .then((accessToken) =>
-            this.callApiWithToken({
-              path: '/me/calendar/events',
-              accessToken
-            }))
+          .then((accessToken) => {
+            this.setState({ accessToken });
+            return this.getEvents();
+            // this.callApiWithToken({
+            //   path: '/me/calendar/events',
+            //   accessToken
+          });
       }
     }
   }
@@ -99,15 +127,37 @@ export class App extends React.Component<App.Props, App.State> {
   }
 
   @autobind
-  callServer() {
-    console.log('hi');
+  getEvents() {
+    this.callServer({
+      method: 'get'
+    });
+  }
+
+  @autobind
+  openScheduleDialog() {
+    this.setState({ scheduleDialog: false });
+  }
+
+  @autobind
+  closeScheduleDialog() {
+    this.setState({ scheduleDialog: true });
+  }
+
+  @autobind
+  callServer({ method, body={}}) {
+    let url = `https://4579cec4.ngrok.io/api/outlook-events`;
+    if(method === 'get') {
+      url += `?token=${this.state.accessToken}` +
+        `&timezone=${momenttz.tz.guess()}`;
+    }
     return $.ajax({
-      url: 'https://4579cec4.ngrok.io/api/outlook-events',
-      method: 'post',
+      url,
+      method,
       headers,
-      data: JSON.stringify({ token: this.state.accessToken })
+      data: JSON.stringify(body),
     }).then((resp: any) => {
-      console.log(resp);
+      let events = this.groups(resp);
+      this.setState({ events });
     })
   }
 
@@ -137,15 +187,95 @@ export class App extends React.Component<App.Props, App.State> {
   @autobind
   actions({ action }) {}
 
+  @autobind
+  groups(events) {
+    return [{
+      links: Object.keys(events).map((key:string) => {
+        let event: any = {};
+        if(events[key].length > 0) {
+          event['name'] = key;
+          event['url'] = '';
+          event.isExpanded = true;
+          event['links'] = events[key].map((evt:any) => {
+            return {
+              name: `${evt.subject}: `+
+                `${moment(evt.startDate).format('h:mm a')} - `+
+                `${moment(evt.endDate).format('h:mm a')}`,
+              url: '', icon: 'TeamsLogo'
+            };
+          })
+          return event;
+        } else {
+          event['name'] = key;
+          event['url'] = '';
+          event['links'] = [{ name: 'No upcoming meetings', url: ''}];
+          event.isExpanded = true;
+          return event
+        }
+      })
+    }];
+    /*
+    moment.utc('2017-12-28T20:30:00').format()
+     * [{
+     *  links: [
+     *    { name: Today, url:'', links: [{}]},
+     *    { name: Tomorrow, url:'', links: [{}]},
+     *    { name: 'Wednesday 12/28', url: '', links}
+     *    { name: Thursday 12/29, url:'', links}
+     *    ]
+     * }]
+     */
+  }
+
   render() {
     const { children } = this.props;
     return (
-      <div className={style.normal}>
-        {children}
-        <DefaultButton
-          primary={true}
-          text={'Add Event'}
-          onClick={this.callServer} />
+        <div className='ms-Grid'>
+          <div className='ms-Grid-col ms-sm4'>
+            <p style={{marginBottom: 0, marginLeft: '15px'}}>
+              <strong>Agenda</strong>
+            </p>
+            <Panel 
+              type={PanelType.smallFixedNear}
+              isOpen={true}
+              headerText='Panel'
+              isBlocking={false}
+              hasCloseButton={false}
+              isHiddenOnDismiss={false}>
+            <span>Content</span>
+            </Panel>
+            {/* <Nav
+              className='uifabnav'
+              ariaLabel='Agenda'
+              groups={this.state.events}
+            /> */}
+            <div style={{ position: 'fixed', bottom: 0 }}>
+              <hr />
+              <DefaultButton
+                style={{ marginBottom: '25px' }}
+                primary={true}
+                iconProps={{ iconName: 'Calendar' }}
+                text={'Schedule a Meeting'}
+                onClick={this.openScheduleDialog} />
+            </div>
+          </div>
+        <Dialog
+          hidden={this.state.scheduleDialog}
+          onDismiss={this.closeScheduleDialog}
+          dialogContentProps={{
+            type: DialogType.largeHeader,
+            title: 'Create Event',
+            subText: 'Create a WebEx Conference'
+          }}
+          modalProps={{
+            isBlocking: false,
+            containerClassName: 'ms-dialogMainOverride'
+          }}>
+          <DialogFooter>
+            <PrimaryButton onClick={this.closeScheduleDialog} text='Save' />
+            <DefaultButton onClick={this.closeScheduleDialog} text='Cancel' />
+          </DialogFooter>
+        </Dialog>
       </div>
     );
   }
