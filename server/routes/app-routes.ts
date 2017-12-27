@@ -27,4 +27,8 @@ router.route('/meetings/:meetingKey')
   .get(webex.getMeeting)
 
 router.route('/outlook-events')
+  .get(msteams.get)
   .post(msteams.createEvent)
+
+router.route('/icons/*')
+  .get(msteams.getIcons)
