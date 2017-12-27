@@ -20,7 +20,7 @@ export class MsGraph {
       headers: this.headers,
       method: params.method,
       json: true,
-      body: params.body
+      body: params.body || {}
     };
   }
 
