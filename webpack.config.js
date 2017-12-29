@@ -58,19 +58,19 @@ module.exports = {
                 localIdentName: '[local]__[hash:base64:5]'
               }
             },
-            {
-              loader: 'postcss-loader',
-              options: {
-                ident: 'postcss',
-                plugins: [
-                  require('postcss-import')({ addDependencyTo: Webpack }),
-                  require('postcss-url')(),
-                  require('postcss-cssnext')(),
-                  require('postcss-reporter')(),
-                  require('postcss-browser-reporter')({ disabled: isProduction }),
-                ]
-              }
-            }
+            // {
+            //   loader: 'postcss-loader',
+            //   options: {
+            //     ident: 'postcss',
+            //     plugins: [
+            //       require('postcss-import')({ addDependencyTo: Webpack }),
+            //       require('postcss-url')(),
+            //       require('postcss-cssnext')(),
+            //       require('postcss-reporter')(),
+            //       require('postcss-browser-reporter')({ disabled: isProduction }),
+            //     ]
+            //   }
+            // }
           ]
         })
       },
@@ -78,6 +78,7 @@ module.exports = {
       { test: /\.html$/, use: 'html-loader' },
       { test: /\.png$/, use: 'url-loader?limit=10000' },
       { test: /\.jpg$/, use: 'file-loader' },
+      { test: /.woff$|.woff2$|.ttf$|.eot$|.svg$/, loader: 'url-loader' }
     ],
   },
   plugins: [
