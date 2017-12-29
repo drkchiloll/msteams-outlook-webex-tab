@@ -41,5 +41,13 @@ export const controller = (() => {
     });
   };
 
+  c.get = function(req: Request, res: Response) {
+    let { token, timezone } = req.query;
+    let graph = new MsGraph({ token });
+    graph.outlookService.get(timezone).then((events) => {
+      res.send(events);
+    });
+  };
+
   return c;
 })();
