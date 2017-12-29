@@ -4,30 +4,10 @@ import { RouteComponentProps } from 'react-router';
 import {  } from '../../components';
 import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
-import { initializeIcons } from '@uifabric/icons';
-initializeIcons();
-// initializeIcons('/api/icons/');
-
+import { UserAgentApplication } from 'msalx';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
-
-import {
-  PrimaryButton,
-  DefaultButton,
-  ButtonType,
-  Label,
-  IButtonProps,
-  Dialog,
-  DialogContent,
-  DialogType,
-  DialogFooter,
-  Nav,
-  Panel,
-  PanelType
-} from 'office-ui-fabric-react';
-
 import { microsoftTeams } from '../../microsoftTeams';
-
 import { Properties } from '../../properties';
 const {
   AzureApp: {
@@ -36,10 +16,6 @@ const {
     headers
   }
 } = Properties;
-
-import {
-  UserAgentApplication
-} from 'msalx';
 
 export namespace App {
   export interface Props extends RouteComponentProps<void> {}
@@ -52,6 +28,18 @@ export namespace App {
     showPanel: boolean;
   }
 }
+
+import {
+  RaisedButton,
+  FontIcon,
+  Drawer,
+  List,
+  Subheader,
+  ListItem,
+  makeSelectable
+} from 'material-ui';
+
+const SelectableList = makeSelectable(List);
 
 export class App extends React.Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
@@ -113,6 +101,30 @@ export class App extends React.Component<App.Props, App.State> {
           });
       }
     }
+  }
+
+  render() {
+    const { children } = this.props;
+    return (
+      <div>
+        <Drawer
+          docked={true}
+          width={315}
+          open={true} >
+          <p style={{
+            marginLeft: '20px'
+          }}>Agenda</p>
+          {this.state.events || (<div></div>)}
+          <RaisedButton
+            label='Schedule A Meeting'
+            style={{ bottom: 30, position: 'fixed'}}
+            fullWidth={true}
+            labelPosition='after'
+            icon={<i style={{color: '#D1C4E9'}} className='fa fa-calendar fa-lg'/>}
+            primary={true}/>
+        </Drawer>
+      </div>
+    );
   }
 
   @autobind
@@ -185,98 +197,52 @@ export class App extends React.Component<App.Props, App.State> {
   }
 
   @autobind
-  actions({ action }) {}
+  nestedEvent(events) {
+    return events.map(evt => {
+      return (
+        <ListItem
+          key={evt.id}
+          value={evt.id}
+          style={{top: 0}}
+          innerDivStyle = {{
+            height: 55, borderLeft: 'solid 4px #673AB7',
+            margin: '0px 0 12px 20px'}}
+          primaryText={evt.subject}
+          rightIconButton={
+            <RaisedButton
+              style={{marginTop:'25px', width: 50}}
+              label='Join' />
+          }
+          secondaryText={
+            <div>
+              {moment(new Date(evt.startDate)).format('h:mm a')} - 
+              {moment(new Date(evt.endDate)).format('h:mm a')} <br/>
+              <FontIcon className='mdi mdi-light mdi-cisco-webex mdi-18px' color='#429637' />
+              &nbsp;Cisco WebEx Meeting
+            </div>
+          }
+          secondaryTextLines={2} />
+      );
+    })
+  }
 
   @autobind
   groups(events) {
-    return [{
-      links: Object.keys(events).map((key:string) => {
-        let event: any = {};
-        if(events[key].length > 0) {
-          event['name'] = key;
-          event['url'] = '';
-          event.isExpanded = true;
-          event['links'] = events[key].map((evt:any) => {
-            return {
-              name: `${evt.subject}: `+
-                `${moment(evt.startDate).format('h:mm a')} - `+
-                `${moment(evt.endDate).format('h:mm a')}`,
-              url: '', icon: 'TeamsLogo'
-            };
-          })
-          return event;
-        } else {
-          event['name'] = key;
-          event['url'] = '';
-          event['links'] = [{ name: 'No upcoming meetings', url: ''}];
-          event.isExpanded = true;
-          return event
-        }
-      })
-    }];
-    /*
-    moment.utc('2017-12-28T20:30:00').format()
-     * [{
-     *  links: [
-     *    { name: Today, url:'', links: [{}]},
-     *    { name: Tomorrow, url:'', links: [{}]},
-     *    { name: 'Wednesday 12/28', url: '', links}
-     *    { name: Thursday 12/29, url:'', links}
-     *    ]
-     * }]
-     */
-  }
-
-  render() {
-    const { children } = this.props;
     return (
-        <div className='ms-Grid'>
-          <div className='ms-Grid-col ms-sm4'>
-            <p style={{marginBottom: 0, marginLeft: '15px'}}>
-              <strong>Agenda</strong>
-            </p>
-            <Panel 
-              type={PanelType.smallFixedNear}
-              isOpen={true}
-              headerText='Panel'
-              isBlocking={false}
-              hasCloseButton={false}
-              isHiddenOnDismiss={false}>
-            <span>Content</span>
-            </Panel>
-            {/* <Nav
-              className='uifabnav'
-              ariaLabel='Agenda'
-              groups={this.state.events}
-            /> */}
-            <div style={{ position: 'fixed', bottom: 0 }}>
-              <hr />
-              <DefaultButton
-                style={{ marginBottom: '25px' }}
-                primary={true}
-                iconProps={{ iconName: 'Calendar' }}
-                text={'Schedule a Meeting'}
-                onClick={this.openScheduleDialog} />
-            </div>
-          </div>
-        <Dialog
-          hidden={this.state.scheduleDialog}
-          onDismiss={this.closeScheduleDialog}
-          dialogContentProps={{
-            type: DialogType.largeHeader,
-            title: 'Create Event',
-            subText: 'Create a WebEx Conference'
-          }}
-          modalProps={{
-            isBlocking: false,
-            containerClassName: 'ms-dialogMainOverride'
-          }}>
-          <DialogFooter>
-            <PrimaryButton onClick={this.closeScheduleDialog} text='Save' />
-            <DefaultButton onClick={this.closeScheduleDialog} text='Cancel' />
-          </DialogFooter>
-        </Dialog>
-      </div>
+      <List>
+        {
+          Object.keys(events).map((key, i) => {
+            return (
+              <ListItem
+                key={`${i}_listItem`}
+                primaryText={key}
+                initiallyOpen={true}
+                primaryTogglesNestedList={true}
+                nestedItems={this.nestedEvent(events[key])} />
+            )
+          })
+        }
+      </List>
     );
   }
 }
