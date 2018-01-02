@@ -8,12 +8,18 @@ import { timeProc } from '../services/event-dates';
 export function outlookServFactory(graph: MsGraph) {
   const service: any = {};
 
+  service.evtFilter = (date: string) =>
+    `filter=start/dateTime ge '${date}'`;
+
   service.get = function(tz) {
+    const evtDates = moment()
+      .subtract(1, 'days')
+      .format('YYYY-MM-DDTHH:mm');
     let events: any, eventProp: string;
     return graph._request({
       body: {},
       method: 'get',
-      path: '/beta/me/events'
+      path: `/beta/me/events?${this.evtFilter(evtDates)}`
     }).then(({value}: any) => {
       events = timeProc.uiDates();
       if(value && value.length > 0) {
@@ -54,6 +60,8 @@ export function outlookServFactory(graph: MsGraph) {
           // console.log(events);
           return events;
         })
+      } else {
+        return timeProc.uiDates();
       }
     });
   };
