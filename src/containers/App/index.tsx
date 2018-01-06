@@ -68,10 +68,7 @@ export namespace App {
   }
 }
 
-const SelectableList = makeSelectable(List);
-
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import { webExController } from '../../../server/controllers/webex';
 
 export class App extends React.Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
