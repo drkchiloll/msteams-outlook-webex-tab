@@ -56,7 +56,10 @@ export class WebEx {
         headers,
         strictSSL: false,
         body: options.body
-      }, (err: any, resp: any, body: any) => resolve(body));
+      }, (err: any, resp: any, body: any) => {
+        console.log(body);
+        resolve(body)
+      });
     });
   };
 }

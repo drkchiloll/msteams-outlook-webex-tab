@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500');
 
+.icon-remove {
+  -webkit-text-stroke: 2px white;
+  -moz-text-stroke: 1px white;
+}
+/* 
 html,
 body {
   margin: 0;
@@ -77,4 +82,4 @@ input[type="checkbox"] {
   -moz-text-rendering: optimizeLegibility;
   -ms-text-rendering: optimizeLegibility;
   text-rendering: optimizeLegibility;
-}
+} */

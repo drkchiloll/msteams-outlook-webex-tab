@@ -3,20 +3,43 @@ import * as ReactDOM from 'react-dom';
 import { Router, Route, Switch } from 'react-router';
 import { createBrowserHistory } from 'history';
 
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import getMuiTheme from 'material-ui/styles/getMuiTheme';
+// import './materialdesignicons.css';
+// import '../node_modules/font-awesome/css/font-awesome.min.css';
+
 import {
-  purple500, deepPurple500, deepPurple200
-} from 'material-ui/styles/colors';
+  MuiThemeProvider,
+  getMuiTheme,
+  colors
+} from 'material-ui/styles';
+
+const {
+  purple500,
+  deepPurple500,
+  deepPurple300,
+  deepPurple200
+} = colors;
 
 const muiTheme = getMuiTheme({
   palette: {
-    textColor: deepPurple200,
+    textColor: deepPurple300,
     primary1Color: deepPurple500
   },
+  datePicker: {
+    selectColor: deepPurple500,
+    headerColor: deepPurple500,
+    calendarTextColor: deepPurple300
+  },
+  textField: {
+    floatingLabelColor: deepPurple300,
+    focusColor: deepPurple300,
+    hintColor: deepPurple300,
+    textColor: deepPurple300
+  },
+  
   appBar: {
     height: 50,
-  }
+  },
+  fontFamily: `'Times New Roman'`
 });
 
 import { App, AuthDialog, ConfigDialog } from './containers';
@@ -35,7 +58,3 @@ ReactDOM.render(
   </MuiThemeProvider>,
   document.getElementById('root')
 );
-
-/*
-border-left: thick solid #ff0000; 66 150 55
-*/

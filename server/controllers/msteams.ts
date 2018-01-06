@@ -3,7 +3,9 @@ import * as request from 'request';
 import * as Promise from 'bluebird';
 import { MsGraph } from '../lib';
 
-export const controller = (() => {
+import { io } from '../run';
+
+export const msTeamsController = (() => {
   let c: any = {};
 
   c.token = function(req: Request, res: Response) {
@@ -12,41 +14,63 @@ export const controller = (() => {
   };
 
   c.createEvent = function(req: Request, res: Response) {
-    let { token } = req.body;
+    let { body, query: { token }} = req;
     let graph = new MsGraph({ token });
-    graph.outlookService.createEvent({
-      subject: 'App Integration Team',
-      body: {
-        contentType: 'html',
-        content: 'Team Formation meeting'
-      },
-      start: {
-        dateTime: '2017-12-27T10:00:00',
-        timeZone: 'Central Standard Time'
-      },
-      end: {
-        dateTime: '2017-12-27T12:00:00',
-        timeZone: 'Central Standard Time'
-      },
-      location: { displayName: 'WebEx Conference' },
-      attendees: [{
-        emailAddress: {
-          address: 'samuel.womack1@gmail.com',
-          name: 'Alter Ego Sam'
-        },
-        type: 'required'
-      }]
-    }).then((resp: any) => {
+    graph.outlookService.createEvent(body).then((resp: any) => {
       res.send(resp);
     });
   };
 
-  c.get = function(req: Request, res: Response) {
+  c.getEvents = function(req: Request, res: Response) {
     let { token, timezone } = req.query;
     let graph = new MsGraph({ token });
     graph.outlookService.get(timezone).then((events) => {
+      // console.log(events);
       res.send(events);
     });
+  };
+
+  c.getUsers = function(req: Request, res: Response) {
+    let { token, users } = req.query;
+    let graph = new MsGraph({ token });
+    graph.userService.get(users).then((users) => {
+      res.send(users);
+    })
+  };
+
+  c.getUserPhoto = function(req:Request, res:Response) {
+    const { 
+      query: { token },
+      params: { id }
+    } = req;
+    let graph = new MsGraph({ token });
+    graph
+      .userService
+      .getPhoto(id)
+      .then((resp) => {
+        if(!resp) resp = {message: 'no photo'};
+        res.send(resp);
+      })
+  };
+
+  c.subscriptions = function(req:Request, res:Response) {
+    const { query: { token }} = req;
+    let graph = new MsGraph({ token });
+    graph._request({
+      method: 'post',
+      body: req.body,
+      path: '/beta/subscriptions'
+    }).then((result) => {
+      console.log(result);
+      res.send(result);
+    })
+  };
+
+  c.hooks = function(req: Request, res: Response) {
+    if(req.query.validationToken) return res.status(200).send(req.query.validationToken);
+    console.log(req.body);
+    res.status(202).send({});
+    io.emit('notification_received', req.body);
   };
 
   return c;

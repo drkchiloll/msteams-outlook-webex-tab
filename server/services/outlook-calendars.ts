@@ -9,7 +9,7 @@ export function outlookServFactory(graph: MsGraph) {
   const service: any = {};
 
   service.evtFilter = (date: string) =>
-    `filter=start/dateTime ge '${date}'`;
+    `filter=start/dateTime ge '${date}'&orderby=end/dateTime`;
 
   service.get = function(tz) {
     const evtDates = moment()
@@ -21,15 +21,15 @@ export function outlookServFactory(graph: MsGraph) {
       method: 'get',
       path: `/beta/me/events?${this.evtFilter(evtDates)}`
     }).then(({value}: any) => {
+      // console.log(value);
       events = timeProc.uiDates();
       if(value && value.length > 0) {
         return Promise.each(value, (val:any) => {
           let event: any = {};
           event.id = val.id;
           event.subject = val.subject;
-          event.link = val.webLink;
-          event.html = val.body.contentType === 'html' ?
-            val.body.content : '';
+          event.webExMeetingKey = val.bodyPreview,
+          event.isOrganizer = val.isOrganizer,
           event.startDate = timeProc.normalizeMsDate({
             date: val.start.dateTime, tz
           });
@@ -44,24 +44,26 @@ export function outlookServFactory(graph: MsGraph) {
           eventProp = timeProc.compareDates({
             date: val.start.dateTime, tz
           });
-          console.log(eventProp);
           return Promise.map(val.attendees, (att: any) => ({
             name: att.emailAddress.name || '',
             emailAddress: att.emailAddress.address,
             status: att.status.response,
             type: att.type
           })).then(attendees => {
-            console.log(eventProp);
             event.attendees = attendees;
             events[eventProp].push(event);
             return;
           });
         }).then(() => {
-          // console.log(events);
+          if(events && events.Other && events.Other.length === 0) {
+            delete events.Other;
+          }
           return events;
         })
       } else {
-        return timeProc.uiDates();
+        let events = timeProc.uiDates();
+        delete events.Other;
+        return events;
       }
     });
   };

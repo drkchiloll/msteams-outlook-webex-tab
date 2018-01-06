@@ -1,33 +1,46 @@
 import * as request from 'request';
 import * as Primise from 'bluebird';
-import { outlookServFactory } from '../services';
+import {
+  outlookServFactory,
+  o365UserServFactory
+} from '../services';
 import { Properties } from '../properties';
 
 const { MsGraph: { uri, headers }} = Properties;
 
 export class MsGraph {
   outlookService: any;
+  userService: any;
   headers: any;
   constructor({ token }) {
     headers['Authorization'] = `Bearer ${token}`;
     this.headers = headers;
     this.outlookService = outlookServFactory(this);
+    this.userService = o365UserServFactory(this);
   }
 
-  private _options(params: any) {
-    return {
-      uri: uri + params.path,
+  private _options({path,method='get',body={}}: any) {
+    let options: any = {
+      uri: uri + path,
       headers: this.headers,
-      method: params.method,
+      method,
       json: true,
-      body: params.body || {}
+      body
     };
+    if(path.includes('photo')) options.encoding = 'binary';
+    return options;
   }
 
   _request({body, method, path}) {
     const reqOptions = this._options({ body, path, method });
+    // console.log(reqOptions);
     return new Promise((resolve, reject) => {
       request(reqOptions, (err, resp, body) => {
+        // console.log(body);
+        if(resp.statusCode === 404) {
+          console.log(resp.statusCode);
+          return resolve(null);
+        }
         return resolve(body);
       });
     });

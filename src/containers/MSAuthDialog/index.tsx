@@ -26,7 +26,7 @@ export class AuthDialog extends React.Component<any, any> {
         this.setState({ isLoggedIn: true });
         this.getToken();
       }
-    }, { navigateToLoginRequestUrl: true }
+    }
   )
   constructor(props) {
     super(props);
@@ -48,7 +48,10 @@ export class AuthDialog extends React.Component<any, any> {
     this.clientApplication
       .acquireTokenSilent(scopes)
       .then((accessToken: string) => {
-        microsoftTeams.authentication.notifySuccess(accessToken);
+        microsoftTeams.authentication.notifySuccess({
+          accessToken,
+          signedInUser: this.clientApplication.getUser().name
+        });
       });
   }
 

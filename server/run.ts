@@ -7,12 +7,13 @@ import * as http from 'http';
 // import * as mongoose from 'mongoose';
 import * as debug from 'debug';
 import { app } from './routes';
-// import { properties } from './services';
+import * as socketIO from 'socket.io';
 
 // mongoose.connect(properties.mongoUrl, (err:any) => {
 //   if(err) throw err;
 // });
 let server = http.createServer(app);
+export const io = socketIO(server);
 /**
  * Get port from environment and store in Express.
  */
@@ -23,6 +24,7 @@ app.set('port', port);
  */
 server.listen(app.get('port'), () => {
   console.log('Server listening on port ' + app.get('port'));
+  io.on('connection', (socket:any) => {});
 });
 
 /**

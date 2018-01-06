@@ -1,7 +1,5 @@
 import * as express from 'express';
-import {
-  webex, msteams
-} from '../controllers';
+import { webExController, msTeamsController } from '../controllers';
 
 export const router: express.Router = express.Router();
 
@@ -12,23 +10,30 @@ router.use((req, res, next) => {
   next();
 });
 
-router
-  .route('/auth')
-  .post(webex.generic);
-
-router
-  .route('/token')
-  .post(msteams.token);
-
 router.route('/meetings')
-  .get(webex.getMeetings);
+  .get(webExController.getMeetings)
+  .post(webExController.createMeeting)
 
-router.route('/meetings/:meetingKey')
-  .get(webex.getMeeting)
+router.route('/meeting/:meetingKey')
+  .get(webExController.getMeeting)
+
+router.route('/webex-joinurl')
+  .post(webExController.getJoinUrls)
+
+router.route('/webex-hostjoinurl')
+  .post(webExController.getHostJoinUrl)
 
 router.route('/outlook-events')
-  .get(msteams.get)
-  .post(msteams.createEvent)
+  .get(msTeamsController.getEvents)
+  .post(msTeamsController.createEvent)
 
-router.route('/icons/*')
-  .get(msteams.getIcons)
+router.route('/users')
+  .get(msTeamsController.getUsers)
+
+router.route('/users/:id/photo')
+  .get(msTeamsController.getUserPhoto)
+
+router.post('/subscriptions', msTeamsController.subscriptions);
+
+router.route('/webhook')
+  .post(msTeamsController.hooks)

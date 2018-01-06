@@ -1,7 +1,2 @@
-export {
-  controller as webex
-} from './webex';
-
-export {
-  controller as msteams
-} from './msteams'
+export { webExController } from './webex';
+export { msTeamsController } from './msteams';

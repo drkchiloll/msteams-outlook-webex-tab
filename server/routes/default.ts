@@ -12,11 +12,18 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get('/', (req, res) =>
+router.post('/', (req, res) => {
+  console.log(req.query);
+  // res.status(200).send(req.query.token);
+  res.redirect(`/?token=${req.query.token}`);
+  // res.sendFile(path.join(__dirname, '../../public/index.html'))
+  // res.send(req.body)
+})
+.get('/', (req, res) =>
   res.sendFile(path.join(__dirname, '../../public/index.html'))
 );
 router.get('/config', (req, res) => {
-  console.log(req.params);
+  // console.log(req.params);
   res.sendFile(path.join(__dirname, '../../public/index.html'))
 });
 router.get('/auth', (req, res) => {
