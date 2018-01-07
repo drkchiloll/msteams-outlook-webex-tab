@@ -21,32 +21,16 @@ const {
 const socket = openSocket(redirectUri);
 
 import {
-  RaisedButton,
-  FontIcon,
-  Drawer,
-  List,
-  Subheader,
-  ListItem,
-  ListItemProps,
-  makeSelectable,
-  TextField,
-  Divider,
-  DatePicker,
-  SelectField,
-  MenuItem,
-  Paper,
-  AutoComplete,
-  CircularProgress,
-  RefreshIndicator,
-  Avatar,
-  IconButton,
-  Dialog
+  RaisedButton, FontIcon, Drawer,
+  List, Subheader, ListItem,
+  makeSelectable, TextField,
+  DatePicker, SelectField, MenuItem,
+  Paper, AutoComplete, Avatar,
+  IconButton, Dialog
 } from 'material-ui';
 
 export namespace App {
-  export interface Props extends RouteComponentProps<void> {
-    nestedItems: ListItemProps;
-  }
+  export interface Props extends RouteComponentProps<void> {}
 
   export interface State {
     signedInUser: string;
@@ -55,7 +39,6 @@ export namespace App {
     scheduleDialog: boolean;
     events: any;
     showPanel: boolean;
-    newEvent: any;
     searchText: string;
     evtHtml: any;
     organizer: any;
@@ -69,6 +52,7 @@ export namespace App {
 }
 
 import { Grid, Row, Col } from 'react-flexbox-grid';
+import { EventForm, TimeDate, EventDates } from '../../components';
 
 export class App extends React.Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
@@ -152,12 +136,12 @@ export class App extends React.Component<App.Props, App.State> {
       evtHtml: <div></div>,
       events: null,
       showPanel: false,
-      newEvent: false,
       newMeeting: {
         title: '',
+        newEvent: false,
         location: '',
-        startDate: '',
-        endDate: '',
+        startDate: new Date(),
+        endDate: new Date(),
         startTime: '',
         endTime: '',
         start: { dateTime: '', timeZone: ''},
@@ -190,9 +174,11 @@ export class App extends React.Component<App.Props, App.State> {
       }
     }
     socket.on('notification_received', (data: any) => {
+      let { newMeeting } = this.state;
       this.getEvents().then(() => {
+        newMeeting.newEvent = false;
         this.setState({
-          newEvent: false,
+          newMeeting,
           newMeetingBtnLabel: 'Schedule Meeting'
         });
       });
@@ -205,7 +191,8 @@ export class App extends React.Component<App.Props, App.State> {
 
   @autobind
   scheduleEvent() {
-    let { organizer } = this.state;
+    let { organizer, newMeeting } = this.state;
+    newMeeting.newEvent = true;
     if(!organizer) {
       this.callServer({
         method: 'get',
@@ -222,25 +209,23 @@ export class App extends React.Component<App.Props, App.State> {
             organizer.photo = 'data:image/jpg;base64,' + img;
           }
           this.setState({
-            newEvent: true,
+            newMeeting,
             organizer
           });
         });
       });
     } else {
-      this.setState({ newEvent: true });
+      this.setState({ newMeeting });
     }
   }
 
   @autobind
-  meetingProps({target: {name}}:any, value:string) {
+  eventFormHandler(name, value) {
+    if(name === 'endDate') alert(value);
     let { newMeeting } = this.state;
     newMeeting[name] = value;
     this.setState({ newMeeting });
-  }
-
-  dateFormatter(date: Date): string {
-    return momenttz.utc(date).tz(momenttz.tz.guess()).format('YYYY-MM-DD');
+    // alert(JSON.stringify(this.state.newMeeting));
   }
 
   formatTime(date:string, time:string) {
@@ -263,6 +248,73 @@ export class App extends React.Component<App.Props, App.State> {
             ':' + time.split(':')[1].split(' ')[0];
       }
     }
+  }
+
+  @autobind
+  normalizeDates() {
+    let { newMeeting:
+      {startDate, startTime, endDate, endTime}
+    } = this.state;
+    let start = moment(startDate).format('YYYY-MM-DD'),
+        end = moment(endDate).format('YYYY-MM-DD');
+    return {
+      start: {
+        dateTime: this.formatTime(start, startTime),
+        timeZone: momenttz.tz(momenttz.tz.guess()).format('z')
+      },
+      end: {
+        dateTime: this.formatTime(end, endTime),
+        timeZone: momenttz.tz(momenttz.tz.guess()).format('z')
+      }
+    };
+  }
+
+  @autobind
+  attendeeSelector(input, index) {
+    let { users, attendees } = this.state;
+    let selectedUser = users[index];
+    return this.callServer({
+      method: 'get',
+      path: `users/${selectedUser.id}/photo`
+    }).then((binaryImg: any) => {
+      if(binaryImg && !binaryImg.message) {
+        let img = new Buffer(binaryImg, 'binary').toString('base64');
+        selectedUser.photo = `data:image/jpg;base64,${img}`;
+      }
+      return selectedUser;
+    }).then(() => {
+      // Check Availability
+      let req:any = {
+        attendees: [{
+          type:'required',
+          emailAddress: {
+            name: selectedUser.displayName,
+            address: selectedUser.mail
+          }
+        }],
+        ...this.normalizeDates(),
+        percentage: '100'
+      };
+      return this.callServer({
+        method: 'post',
+        path: `outlook-conflict-finder`,
+        body: req
+      });
+    }).then((result:any) => {
+      if(result.emptySuggestionsReason) {
+        selectedUser.status = 'busy';
+      } else {
+        selectedUser.status = 'free';
+      }
+      // alert(JSON.stringify(result));
+      attendees.push(selectedUser);
+      this.setState({ attendees });
+      this.setState({
+        searchText: '',
+        users: null,
+        autoCompleteMenuHeight: 25
+      });
+    })
   }
 
   render() {
@@ -290,116 +342,14 @@ export class App extends React.Component<App.Props, App.State> {
         </div>
         <Paper style={{
           left: 305, position: 'fixed', top: 0, height: 'auto',
-          display: this.state.newEvent ? 'inline-block' : 'none'
+          display: this.state.newMeeting.newEvent ? 'inline-block' : 'none',
+          width: 650
         }} zDepth={2} >
-          <div style={{marginLeft: '10px'}}>
-            <Row><Col xs={12}><h3>New Meeting</h3></Col></Row>
-            <Row>
-              <Col xs={8}>
-                <TextField
-                  name='title'
-                  hintText='Title'
-                  style={{width: 570, maxWidth: 570 }}
-                  onChange={this.meetingProps} />
-              </Col> 
-            </Row>
-            <Row>
-              <Col xs={8}>
-                <TextField
-                  name='location'
-                  hintText='Location'
-                  style={{ width: 570, maxWidth: 570 }}
-                  onChange={this.meetingProps} />
-              </Col>
-            </Row>
-            <Row>
-              <Col sm={3}>
-                <DatePicker
-                  hintText='Start'
-                  hintStyle={{ color: '#9575CD' }}
-                  style={{ marginTop: 10 }}
-                  textFieldStyle={{ width: 130, minWidth: 130 }}
-                  container='inline'
-                  mode='landscape'
-                  formatDate={(date: Date) => {
-                    return moment(date).format('MM/DD/YYYY');
-                  }}
-                  autoOk={true}
-                  onChange={(err: any, date: Date) => {
-                    let e:any = { target: { name: 'startDate' } };
-                    this.meetingProps(e, this.dateFormatter(date))
-                  }} />
-              </Col>
-              <Col sm={2}>
-                <SelectField
-                  value={(() => {
-                    return this.state.newMeeting.startTime || (() => {
-                      let start = moment();
-                      let remainder = 30 - start.minute() % 30;
-                      return moment(start).add(remainder, 'minutes').format('h:mm a');
-                    })()
-                  })()}
-                  onChange={(e:any, key: number, value) => {
-                    let { newMeeting } = this.state;
-                    let startDate, startTime: string;
-                    newMeeting.startTime = value;
-                    if(newMeeting.startDate) startDate = newMeeting.startDate;
-                    else startDate = moment().format('YYYY-MM-DD');
-                    let dateTime = this.formatTime(startDate, value);
-                    // newMeeting.endTime = moment(dateTime).add(30, 'minutes').format('h:mm a');
-                    // newMeeting.endDate = newMeeting.startDate;
-                    newMeeting.start.dateTime = dateTime;
-                    newMeeting.start.timeZone = momenttz.tz.guess();
-                    // newMeeting.end.dateTime = newMeeting.endDate + 'T' + 
-                    //   moment(dateTime).add(30, 'minutes').format('HH:mm');
-                    this.setState({ newMeeting });
-                  }}
-                  style={{ width: 120, minWidth: 120, marginTop: 10, marginRight: '30px' }}>
-                  {this.menuItems()}
-                </SelectField>
-              </Col>
-              <Col sm={3}>
-                <DatePicker
-                  hintText='End'
-                  hintStyle={{ color: '#9575CD' }}
-                  style={{ marginTop: 10, marginLeft: '30px' }}
-                  textFieldStyle={{ width: 130, minWidth: 130 }}
-                  container='inline'
-                  mode='landscape'
-                  formatDate={(date: Date) => {
-                    return moment(date).format('MM/DD/YYYY');
-                  }}
-                  autoOk={true}
-                  onChange={(err: any, date: Date) => {
-                    let e: any = { target: { name: 'endDate' } };
-                    this.meetingProps(e, this.dateFormatter(date))
-                  }} />
-              </Col>
-              <Col sm={2}>
-                <SelectField
-                  value={(() => {
-                    return this.state.newMeeting.endTime || (() => {
-                      let start = moment();
-                      let remainder = 30 - start.minute() % 30;
-                      return moment(start).add((remainder + 30), 'minutes').format('h:mm a');
-                    })()
-                  })()}
-                  style={{ width: 120, minWidth: 120, marginTop: 10, marginLeft: '20px' }}
-                  onChange={(e:any, key: number, value: string) => {
-                    let { newMeeting } = this.state;
-                    let endDate, endTime;
-                    newMeeting.endTime = value;
-                    if(newMeeting.endDate) endDate = newMeeting.endDate;
-                    else endDate = moment().format('YYYY-MM-DD');
-                    let dateTime = this.formatTime(endDate, value);
-                    newMeeting.end.dateTime = dateTime;
-                    newMeeting.end.timeZone = momenttz.tz.guess();
-                    this.setState({ newMeeting });
-                  }} >
-                  {this.menuItems()}
-                </SelectField>
-              </Col>
-            </Row>
+          <Grid fluid>
+            <EventForm inputChange={this.eventFormHandler}/>
+            <EventDates
+              inputChange={this.eventFormHandler}
+              {...this.state.newMeeting} />
             <Row>
               <Col sm={4} >
                 <AutoComplete
@@ -430,32 +380,7 @@ export class App extends React.Component<App.Props, App.State> {
                       this.setState({ users: value, autoCompleteMenuHeight: 'auto' });
                     });
                   }}
-                  onNewRequest={({text}, index) => {
-                    let { users, attendees } = this.state;
-                    let _id = text;
-                    let user = users[index];
-                    return this.callServer({
-                      method: 'get',
-                      path: `users/${user.id}/photo`
-                    }).then((binaryImg:any) => {
-                      if(binaryImg && !binaryImg.message) {
-                        let img = new Buffer(binaryImg, 'binary').toString('base64');
-                        user.photo = `data:image/jpg;base64,${img}`;
-                      }
-                      return user;
-                    }).then(() => {
-                      // console.log(user);
-                      attendees.push(user);
-                      this.setState({ attendees });
-                      setTimeout(() => {
-                        this.setState({
-                          searchText: '',
-                          users: null,
-                          autoCompleteMenuHeight: 25
-                        });
-                      }, 250)
-                    })
-                  }}
+                  onNewRequest={this.attendeeSelector}
                   searchText={this.state.searchText}
                   openOnFocus={true} />
               </Col>
@@ -520,7 +445,15 @@ export class App extends React.Component<App.Props, App.State> {
                             <Col xs={7}>
                               <div style={{ marginLeft: '15px' }}>
                                 <Row><Col xs={12}>{attendee.displayName}</Col></Row>
-                                <Row><Col xs={12}><em>Unknown</em></Col></Row>
+                                <Row>
+                                  <Col xs={12}>
+                                    <em style={{
+                                      textColor: attendee.status==='busy' ? 'red': ''
+                                    }}>
+                                      {attendee.status}
+                                    </em>
+                                  </Col>
+                                </Row>
                               </div>
                             </Col>
                             <Col xs={2}>
@@ -598,7 +531,7 @@ export class App extends React.Component<App.Props, App.State> {
                   }} />
               </Col>
             </Row>
-          </div>
+          </Grid>
         </Paper>
         <Dialog
           title='WebEx Credentials'
@@ -744,7 +677,7 @@ export class App extends React.Component<App.Props, App.State> {
       method: 'post',
       body: {
         changeType: 'created,updated',
-        notificationUrl: 'https://4579cec4.ngrok.io/api/webhook',
+        notificationUrl: 'https://msteams-webex.ngrok.io/api/webhook',
         resource: 'me/events',
         clientState: 'subscription-identifier',
         expirationDateTime: moment().add('1', 'days').utc().format()
@@ -825,58 +758,5 @@ export class App extends React.Component<App.Props, App.State> {
         );
       })
     }
-  }
-
-  menuItems() {
-    return [
-      <MenuItem key={`time_0`} value={'12:00 am'} primaryText={'12:00 am'} />,
-      <MenuItem key={`time_1`} value={'12:30 am'} primaryText={'12:30 am'} />,
-      <MenuItem key={`time_2`} value={'1:00 am'} primaryText={'1:00 am'} />,
-      <MenuItem key={`time_3`} value={'1:30 am'} primaryText={'1:30 am'} />,
-      <MenuItem key={`time_4`} value={'2:00 am'} primaryText={'2:00 am'} />,
-      <MenuItem key={`time_5`} value={'2:30 am'} primaryText={'2:30 am'} />,
-      <MenuItem key={`time_6`} value={'3:00 am'} primaryText={'3:00 am'} />,
-      <MenuItem key={`time_7`} value={'3:30 am'} primaryText={'3:30 am'} />,
-      <MenuItem key={`time_8`} value={'4:00 am'} primaryText={'4:00 am'} />,
-      <MenuItem key={`time_9`} value={'4:30 am'} primaryText={'4:30 am'} />,
-      <MenuItem key={`time_10`} value={'5:00 am'} primaryText={'5:00 am'} />,
-      <MenuItem key={`time_11`} value={'5:30 am'} primaryText={'5:30 am'} />,
-      <MenuItem key={`time_12`} value={'6:00 am'} primaryText={'6:00 am'} />,
-      <MenuItem key={`time_13`} value={'6:30 am'} primaryText={'6:30 am'} />,
-      <MenuItem key={`time_14`} value={'7:00 am'} primaryText={'7:00 am'} />,
-      <MenuItem key={`time_15`} value={'7:30 am'} primaryText={'7:30 am'} />,
-      <MenuItem key={`time_16`} value={'8:00 am'} primaryText={'8:00 am'} />,
-      <MenuItem key={`time_17`} value={'8:30 am'} primaryText={'8:30 am'} />,
-      <MenuItem key={`time_18`} value={'9:00 am'} primaryText={'9:00 am'} />,
-      <MenuItem key={`time_19`} value={'9:30 am'} primaryText={'9:30 am'} />,
-      <MenuItem key={`time_20`} value={'10:00 am'} primaryText={'10:00 am'} />,
-      <MenuItem key={`time_21`} value={'10:30 am'} primaryText={'10:30 am'} />,
-      <MenuItem key={`time_22`} value={'11:00 am'} primaryText={'11:00 am'} />,
-      <MenuItem key={`time_23`} value={'11:30 am'} primaryText={'11:30 am'} />,
-      <MenuItem key={`time_24`} value={'12:00 pm'} primaryText={'12:00 pm'} />,
-      <MenuItem key={`time_25`} value={'12:30 pm'} primaryText={'12:30 pm'} />,
-      <MenuItem key={`time_26`} value={'1:00 pm'} primaryText={'1:00 pm'} />,
-      <MenuItem key={`time_27`} value={'1:30 pm'} primaryText={'1:30 pm'} />,
-      <MenuItem key={`time_28`} value={'2:00 pm'} primaryText={'2:00 pm'} />,
-      <MenuItem key={`time_29`} value={'2:30 pm'} primaryText={'2:30 pm'} />,
-      <MenuItem key={`time_30`} value={'3:00 pm'} primaryText={'3:00 pm'} />,
-      <MenuItem key={`time_31`} value={'3:30 pm'} primaryText={'3:30 pm'} />,
-      <MenuItem key={`time_32`} value={'4:00 pm'} primaryText={'4:00 pm'} />,
-      <MenuItem key={`time_33`} value={'4:30 pm'} primaryText={'4:30 pm'} />,
-      <MenuItem key={`time_34`} value={'5:00 pm'} primaryText={'5:00 pm'} />,
-      <MenuItem key={`time_35`} value={'5:30 pm'} primaryText={'5:30 pm'} />,
-      <MenuItem key={`time_36`} value={'6:00 pm'} primaryText={'6:00 pm'} />,
-      <MenuItem key={`time_37`} value={'6:30 pm'} primaryText={'6:30 pm'} />,
-      <MenuItem key={`time_38`} value={'7:00 pm'} primaryText={'7:00 pm'} />,
-      <MenuItem key={`time_39`} value={'7:30 pm'} primaryText={'7:30 pm'} />,
-      <MenuItem key={`time_40`} value={'8:00 pm'} primaryText={'8:00 pm'} />,
-      <MenuItem key={`time_41`} value={'8:30 pm'} primaryText={'8:30 pm'} />,
-      <MenuItem key={`time_42`} value={'9:00 pm'} primaryText={'9:00 pm'} />,
-      <MenuItem key={`time_43`} value={'9:30 pm'} primaryText={'9:30 pm'} />,
-      <MenuItem key={`time_44`} value={'10:00 pm'} primaryText={'10:00 pm'} />,
-      <MenuItem key={`time_45`} value={'10:30 pm'} primaryText={'10:30 pm'} />,
-      <MenuItem key={`time_46`} value={'11:00 pm'} primaryText={'11:00 pm'} />,
-      <MenuItem key={`time_47`} value={'11:30 pm'} primaryText={'11:30 pm'} />
-    ]
   }
 }
