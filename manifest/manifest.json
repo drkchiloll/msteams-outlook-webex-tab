@@ -3,9 +3,9 @@
   "appId": "3d73a702-0613-4eb4-85d8-de87f12cb1b5",
   "developer": {
     "name": "WWTBD - ",
-    "websiteUrl": "https://4579cec4.ngrok.io/",
-    "termsOfUseUrl": "https://4579cec4.ngrok.io/tou.html",        
-    "privacyUrl": "https://4579cec4.ngrok.io/privacy.html"
+    "websiteUrl": "https://msteams-webex.ngrok.io/",
+    "termsOfUseUrl": "https://msteams-webex.ngrok.io/tou.html",        
+    "privacyUrl": "https://msteams-webex.ngrok.io/privacy.html"
   },
   "version": "0.3",
   "validDomains": ["o365.wwtatc.com"],
@@ -22,11 +22,11 @@
           "88": "webex_88.png"
         },
         "accentColor": "#223344",
-        "configUrl": "https://4579cec4.ngrok.io/config",
+        "configUrl": "https://msteams-webex.ngrok.io/config",
         "canUpdateConfig": true
       }
     ],
-  "signInUrl": "https://4579cec4.ngrok.io/auth",
+  "signInUrl": "https://msteams-webex.ngrok.io/auth",
   "bots": [],
   "needsIdentity": false
 }
