@@ -37,9 +37,11 @@ export class MsGraph {
     return new Promise((resolve, reject) => {
       request(reqOptions, (err, resp, body) => {
         // console.log(body);
-        if(resp.statusCode === 404) {
+        if(resp && resp.statusCode === 404) {
           console.log(resp.statusCode);
           return resolve(null);
+        } else if(resp && resp.statusCode === 500) {
+          console.log(body);
         }
         return resolve(body);
       });
