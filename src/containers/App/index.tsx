@@ -52,7 +52,7 @@ export namespace App {
 }
 
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import { EventForm, TimeDate, EventDates } from '../../components';
+import { EventForm, EventDates } from '../../components';
 
 export class App extends React.Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
@@ -259,11 +259,11 @@ export class App extends React.Component<App.Props, App.State> {
         end = moment(endDate).format('YYYY-MM-DD');
     return {
       start: {
-        dateTime: this.formatTime(start, startTime),
+        dateTime: moment(this.formatTime(start, startTime)).format('YYYY-MM-DDTHH:mm:ss'),
         timeZone: momenttz.tz(momenttz.tz.guess()).format('z')
       },
       end: {
-        dateTime: this.formatTime(end, endTime),
+        dateTime: moment(this.formatTime(end, endTime)).format('YYYY-MM-DDTHH:mm:ss'),
         timeZone: momenttz.tz(momenttz.tz.guess()).format('z')
       }
     };
@@ -285,6 +285,7 @@ export class App extends React.Component<App.Props, App.State> {
     }).then(() => {
       // Check Availability
       let req:any = {
+        timeZone: momenttz.tz.guess(),
         attendees: [{
           type:'required',
           emailAddress: {
@@ -293,7 +294,7 @@ export class App extends React.Component<App.Props, App.State> {
           }
         }],
         ...this.normalizeDates(),
-        percentage: '100'
+        percentage: '80'
       };
       return this.callServer({
         method: 'post',
@@ -306,7 +307,6 @@ export class App extends React.Component<App.Props, App.State> {
       } else {
         selectedUser.status = 'free';
       }
-      // alert(JSON.stringify(result));
       attendees.push(selectedUser);
       this.setState({ attendees });
       this.setState({
@@ -448,7 +448,7 @@ export class App extends React.Component<App.Props, App.State> {
                                 <Row>
                                   <Col xs={12}>
                                     <em style={{
-                                      textColor: attendee.status==='busy' ? 'red': ''
+                                      color: attendee.status==='busy' ? 'red': ''
                                     }}>
                                       {attendee.status}
                                     </em>
@@ -489,6 +489,7 @@ export class App extends React.Component<App.Props, App.State> {
                     </i>
                   }
                   onClick={() => {
+                    alert(JSON.stringify(this.state.newMeeting));
                     this.setState({ newMeetingBtnLabel: null });
                     let { newMeeting, attendees } = this.state;
                     let outlookEvent: any = {
