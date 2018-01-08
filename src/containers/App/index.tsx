@@ -26,7 +26,7 @@ import {
   makeSelectable, TextField,
   DatePicker, SelectField, MenuItem,
   Paper, AutoComplete, Avatar,
-  IconButton, Dialog
+  IconButton
 } from 'material-ui';
 
 export namespace App {
@@ -36,7 +36,7 @@ export namespace App {
     signedInUser: string;
     isLoggedIn: boolean;
     accessToken: string;
-    scheduleDialog: boolean;
+    webExSettingsEditor: boolean;
     events: any;
     showPanel: boolean;
     searchText: string;
@@ -52,7 +52,9 @@ export namespace App {
 }
 
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import { EventForm, EventDates } from '../../components';
+import {
+  EventForm, EventDates, WebExSettings
+} from '../../components';
 
 export class App extends React.Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
@@ -81,7 +83,7 @@ export class App extends React.Component<App.Props, App.State> {
           if(this.state.webex.webExId) {
             return this.getEvents();
           } else {
-            this.openScheduleDialog();
+            this.openWebExSettings();
           }
         },
         failureCallback: function (err) { }
@@ -132,7 +134,7 @@ export class App extends React.Component<App.Props, App.State> {
       signedInUser: '',
       isLoggedIn: false,
       accessToken: null,
-      scheduleDialog: false,
+      webExSettingsEditor: false,
       evtHtml: <div></div>,
       events: null,
       showPanel: false,
@@ -153,7 +155,7 @@ export class App extends React.Component<App.Props, App.State> {
       organizer: null,
       attendees: [],
       newMeetingBtnLabel: 'Schedule Meeting',
-      webex: {}
+      webex: { webExId: '', webExPassword: '' }
     };
     microsoftTeams.initialize();
     if(window.self !== window.top) {
@@ -534,49 +536,12 @@ export class App extends React.Component<App.Props, App.State> {
             </Row>
           </Grid>
         </Paper>
-        <Dialog
-          title='WebEx Credentials'
-          actions={[
-            <RaisedButton 
-              label='Cancel'
-              primary={true}
-              onClick={this.closeScheduleDialog} />,
-            <RaisedButton 
-              label='Submit'
-              primary={true}
-              onClick={this.closeScheduleDialog} />
-          ]}
-          modal={false}
-          open={this.state.scheduleDialog}
-          onRequestClose={() => {
-            this.closeScheduleDialog();
-          }} >
-          <Grid>
-            <Row>
-              <Col xs={3}>
-                <TextField 
-                  hintText='WebEx ID'
-                  onChange={(e, val) => {
-                    let { webex } = this.state;
-                    webex.webExId = val;
-                    this.setState({ webex });
-                  }} />
-              </Col>
-            </Row>
-            <Row>
-              <Col xs={3}>
-                <TextField
-                  hintText='WebEx Password'
-                  onChange={(e, val) => {
-                    let { webex } = this.state;
-                    webex.webExPassword = val;
-                    this.setState({ webex });
-                  }} />
-              </Col>
-            </Row>
-          </Grid>
-
-        </Dialog>
+        <WebExSettings
+          webex={this.state.webex}
+          open={this.openWebExSettings}
+          close={this.closeWebExSettings}
+          onWebExChange={this.handleWebExCredentials}
+          webExSettingsEditor={this.state.webExSettingsEditor} />
       </div>
     );
   }
@@ -664,26 +629,33 @@ export class App extends React.Component<App.Props, App.State> {
   }
 
   @autobind
-  openScheduleDialog() {
-    this.setState({ scheduleDialog: true });
+  handleWebExCredentials(propName, value) {
+    let { webex } = this.state;
+    webex[propName] = value;
+    this.setState({ webex });
   }
 
   @autobind
-  closeScheduleDialog() {
-    this.setState({ scheduleDialog: false });
-    localStorage.setItem('webex', JSON.stringify(this.state.webex));
-    this.getEvents();
-    return this.callServer({
-      path: 'subscriptions',
-      method: 'post',
-      body: {
-        changeType: 'created,updated',
-        notificationUrl: 'https://msteams-webex.ngrok.io/api/webhook',
-        resource: 'me/events',
-        clientState: 'subscription-identifier',
-        expirationDateTime: moment().add('1', 'days').utc().format()
-      }
-    });
+  openWebExSettings() {
+    this.setState({ webExSettingsEditor: true });
+  }
+
+  @autobind
+  closeWebExSettings() {
+    this.setState({ webExSettingsEditor: false });
+    // localStorage.setItem('webex', JSON.stringify(this.state.webex));
+    // this.getEvents();
+    // return this.callServer({
+    //   path: 'subscriptions',
+    //   method: 'post',
+    //   body: {
+    //     changeType: 'created,updated',
+    //     notificationUrl: 'https://msteams-webex.ngrok.io/api/webhook',
+    //     resource: 'me/events',
+    //     clientState: 'subscription-identifier',
+    //     expirationDateTime: moment().add('1', 'days').utc().format()
+    //   }
+    // });
   }
 
   @autobind
