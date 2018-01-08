@@ -27,6 +27,9 @@ router.route('/outlook-events')
   .get(msTeamsController.getEvents)
   .post(msTeamsController.createEvent)
 
+router.route('/outlook-conflict-finder')
+  .post(msTeamsController.conflictFinder)
+
 router.route('/users')
   .get(msTeamsController.getUsers)
 

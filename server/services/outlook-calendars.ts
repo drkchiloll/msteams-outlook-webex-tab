@@ -89,5 +89,38 @@ export function outlookServFactory(graph: MsGraph) {
     });
   };
 
+  service.findMeetingTimes = function(meeting: any) {
+    // moment.duration(1, 'hours').toISOString() converts to PT1H
+    meeting.start.timeZone = timeProc.convertZones[meeting.start.timeZone];
+    meeting.end.timeZone = timeProc.convertZones[meeting.end.timeZone];
+    let endDateRange = JSON.parse(JSON.stringify(meeting.end));
+    endDateRange.dateTime =
+      timeProc.generateFindMeetingTimeRange(meeting.start.dateTime, meeting.timeZone);
+    graph.headers['Prefer'] = `outlook.timezone="${meeting.start.timeZone}"`;
+    let finder: any = {
+      attendees: meeting.attendees,
+      timeConstraint: {
+        activityDomain: 'work',
+        timeslots: [{
+          start: meeting.start,
+          end: endDateRange
+        }]
+      },
+      meetingDuration: timeProc.getISOTime({
+        start: meeting.start.dateTime,
+        end: meeting.end.dateTime
+      }),
+      returnSuggestionReasons: true,
+      minimumAttendeePercentage: '100' || meeting.percentage
+      // maxCandidates: 5
+    };
+    console.log(JSON.stringify(finder));
+    return graph._request({
+      path: '/beta/me/findMeetingTimes',
+      method: 'post',
+      body: finder
+    });
+  };
+
   return service;
 };

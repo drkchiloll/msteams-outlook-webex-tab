@@ -50,3 +50,30 @@ timeProc.compareDates = function({ date, tz }) {
     return 'Other';
   }
 };
+
+timeProc.getISOTime = function({start, end}) {
+  let startDate = moment(new Date(start)),
+      endDate = moment(new Date(end));
+  let duration = moment.duration(endDate.diff(startDate));
+  return duration.toISOString();
+};
+
+timeProc.generateFindMeetingTimeRange = function(date, tz) {
+  let dateTime = momentTz.utc(
+    moment.utc(date)
+  ).tz(tz);
+  let momentDateTime =
+    moment(dateTime).hour(18).minute(0).second(0).millisecond(0).format('YYYY-MM-DDTHH:mm:ss');
+  return momentDateTime;
+};
+
+timeProc.convertZones = {
+  EST: 'Eastern Standard Time',
+  EDT: 'Eastern Daylight Time',
+  CST: 'Central Standard Time',
+  CDT: 'Central Daylight Time',
+  MST: 'Mountain Standard Time',
+  MDT: 'Mountain Daylight Time',
+  PST: 'Pacific Standard Time',
+  PDT: 'Pacific Daylight Time'
+};

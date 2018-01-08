@@ -9,7 +9,7 @@ export const msTeamsController = (() => {
   let c: any = {};
 
   c.token = function(req: Request, res: Response) {
-    console.log(req.query);
+    // console.log(req.query);
     res.redirect('/');
   };
 
@@ -72,6 +72,19 @@ export const msTeamsController = (() => {
     res.status(202).send({});
     io.emit('notification_received', req.body);
   };
+
+  c.conflictFinder = function(req:Request, res:Response) {
+    let { token } = req.query;
+    let graph = new MsGraph({ token });
+    graph
+      .outlookService
+      .findMeetingTimes(req.body)
+      .then((result:any) => {
+        console.log(JSON.stringify(result));
+        // console.log(result.meetingTimeSuggestions.length);
+        res.send(result);
+      });
+  }
 
   return c;
 })();
