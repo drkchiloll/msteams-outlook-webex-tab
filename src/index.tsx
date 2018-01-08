@@ -13,16 +13,16 @@ import {
 } from 'material-ui/styles';
 
 const {
-  purple500,
-  deepPurple500,
-  deepPurple300,
-  deepPurple200
+  purple500, deepPurple500,
+  deepPurple300, deepPurple200
 } = colors;
 
 const muiTheme = getMuiTheme({
   palette: {
     textColor: deepPurple300,
-    primary1Color: deepPurple500
+    primary1Color: deepPurple500,
+    primary2Color: deepPurple500,
+    primary3Color: deepPurple500
   },
   datePicker: {
     selectColor: deepPurple500,
@@ -34,10 +34,6 @@ const muiTheme = getMuiTheme({
     focusColor: deepPurple300,
     hintColor: deepPurple300,
     textColor: deepPurple300
-  },
-  
-  appBar: {
-    height: 50,
   },
   fontFamily: `'Times New Roman'`
 });
