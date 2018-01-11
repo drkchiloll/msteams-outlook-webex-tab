@@ -2,22 +2,46 @@ import * as request from 'request';
 import * as Primise from 'bluebird';
 import {
   outlookServFactory,
-  o365UserServFactory
+  o365UserServFactory,
+  MsTeamsServiceFactory,
 } from '../services';
+
+import { MSTeamsService } from '../models';
+
 import { Properties } from '../properties';
 
-const { MsGraph: { uri, headers }} = Properties;
+const { MsGraph: {
+  uri, headers, connectorUrl
+}} = Properties;
+
+export interface UserService {
+  get(any): Promise<any>;
+  getMe(): Promise<any>;
+  getPhoto(string): Promise<any>;
+  getOne(string): Promise<any>;
+}
 
 export class MsGraph {
   outlookService: any;
-  userService: any;
+  userService: UserService;
+  msTeamsService: MSTeamsService;
   headers: any;
   constructor({ token }) {
     headers['Authorization'] = `Bearer ${token}`;
     this.headers = headers;
     this.outlookService = outlookServFactory(this);
     this.userService = o365UserServFactory(this);
+    this.msTeamsService = MsTeamsServiceFactory(this);
   }
+
+  connectorRequest(card) {
+    return new Promise((resolve, reject) => {
+      request.post({
+        uri: connectorUrl, headers,
+        json: true, body: card
+      }, (err, resp, body) => resolve(body));
+    })
+  };
 
   private _options({path,method='get',body={}}: any) {
     let options: any = {
@@ -37,13 +61,18 @@ export class MsGraph {
     return new Promise((resolve, reject) => {
       request(reqOptions, (err, resp, body) => {
         // console.log(body);
-        if(resp && resp.statusCode === 404) {
-          console.log(resp.statusCode);
-          return resolve(null);
-        } else if(resp && resp.statusCode === 500) {
-          console.log(body);
+        if(resp) {
+          if(resp.statusCode === 404) {
+            // console.log(resp.statusCode);
+            return resolve(null);
+          } else if(resp.statusCode === 500) {
+            console.log(body);
+          } else if(resp.statusCode === 401) {
+            return resolve({ status: resp.statusCode });
+          } else {
+            return resolve(body);
+          }
         }
-        return resolve(body);
       });
     });
   }
