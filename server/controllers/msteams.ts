@@ -5,15 +5,52 @@ import { MsGraph } from '../lib';
 
 import { io } from '../run';
 
-export const msTeamsController = (() => {
+export interface MsTeamsReqQuery {
+  token: string;
+  timeZone?: string;
+}
+
+export interface CreateEventObject {
+  subject: string;
+  body?: { contentType, content },
+  start: { dateTime, timeZone },
+  end: { dateTime, timeZone },
+  location: { displayName },
+  attendees: [{ emailAddress: {address, name}, type }]
+}
+
+export interface CreateEventRequest extends Request {
+  body: CreateEventObject;
+  query: MsTeamsReqQuery
+}
+
+export interface MSTeamsController {
+  me(Request,Response): Response;
+  createEvent(CreateEventRequest,Response): Response;
+  getEvents(Request,Response): Response;
+  getUsers(Request,Response): Response;
+  getUserPhoto(Request,Response): Response;
+  createSubscription(Request,Response): Response;
+  deleteSubscription(Request,Response): Response;
+  hooks(Request,Response): Response;
+  conflictFinder(Request,Response): Response;
+  teamMembers(Request,Response): Response;
+  webExDialogConnector(Request,Response): Response;
+}
+
+export const msTeamsController: MSTeamsController = (() => {
   let c: any = {};
 
-  c.token = function(req: Request, res: Response) {
-    // console.log(req.query);
-    res.redirect('/');
+  c.me = function(req:Request, res:Response) {
+    let { token } = req.query;
+    let graph = new MsGraph({ token });
+    graph
+      .userService
+      .getMe()
+      .then((result:any) => res.send(result));
   };
 
-  c.createEvent = function(req: Request, res: Response) {
+  c.createEvent = function(req: CreateEventRequest, res: Response) {
     let { body, query: { token }} = req;
     let graph = new MsGraph({ token });
     graph.outlookService.createEvent(body).then((resp: any) => {
@@ -53,7 +90,7 @@ export const msTeamsController = (() => {
       })
   };
 
-  c.subscriptions = function(req:Request, res:Response) {
+  c.createSubscription = function(req:Request, res:Response) {
     const { query: { token }} = req;
     let graph = new MsGraph({ token });
     graph._request({
@@ -66,7 +103,18 @@ export const msTeamsController = (() => {
     })
   };
 
+  c.deleteSubscription = function(req:Request, res:Response) {
+    const { params: {id}, query: {token} } = req;
+    let graph = new MsGraph({ token });
+    graph._request({
+      method: 'delete',
+      body: {},
+      path: `/beta/subscription/${id}`
+    }).then((resp) => res.send({}));
+  };
+
   c.hooks = function(req: Request, res: Response) {
+    console.log(req.query);
     if(req.query.validationToken) return res.status(200).send(req.query.validationToken);
     console.log(req.body);
     res.status(202).send({});
@@ -84,6 +132,25 @@ export const msTeamsController = (() => {
         // console.log(result.meetingTimeSuggestions.length);
         res.send(result);
       });
+  };
+
+  c.teamMembers = function(req:Request, res:Response) {
+    let { token, groupId } = req.query;
+    let graph = new MsGraph({ token });
+    return graph
+      .msTeamsService
+      .listMembers(groupId)
+      .then(value => res.send(value));
+  };
+
+  c.webExDialogConnector = function(req:Request, res:Response) {
+    res.send({});
+    let { actionCards, organizer } = req.body;
+    let graph = new MsGraph({ token: 'no token needed' });
+    graph
+      .msTeamsService
+      .postActionCard(actionCards, organizer)
+      .then((resp:any) => console.log(resp));
   }
 
   return c;
