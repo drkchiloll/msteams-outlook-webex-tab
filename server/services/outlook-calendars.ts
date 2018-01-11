@@ -12,10 +12,12 @@ export function outlookServFactory(graph: MsGraph) {
     `filter=start/dateTime ge '${date}'&orderby=end/dateTime`;
 
   service.get = function(tz) {
+    let headerTimeZone = timeProc.convertZones[momentTz.tz(tz).format('z')];
     const evtDates = moment()
       .subtract(1, 'days')
       .format('YYYY-MM-DDTHH:mm');
     let events: any, eventProp: string;
+    graph.headers.Prefer = `outlook.timezone="${headerTimeZone}"`;
     return graph._request({
       body: {},
       method: 'get',
@@ -82,6 +84,10 @@ export function outlookServFactory(graph: MsGraph) {
         }]
       }
     */
+    let newMeeting = body;
+    newMeeting.start.timeZone = timeProc.convertZones[newMeeting.start.timeZone];
+    newMeeting.end.timeZone = newMeeting.start.timeZone;
+    graph.headers.Prefer = `outlook.timezone="${newMeeting.start.timeZone}"`;
     return graph._request({
       body,
       method: 'post',
@@ -111,7 +117,7 @@ export function outlookServFactory(graph: MsGraph) {
         end: meeting.end.dateTime
       }),
       returnSuggestionReasons: true,
-      minimumAttendeePercentage: '100' || meeting.percentage
+      minimumAttendeePercentage: meeting.percentage
       // maxCandidates: 5
     };
     console.log(JSON.stringify(finder));
