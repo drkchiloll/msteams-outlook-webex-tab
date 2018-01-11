@@ -18,19 +18,17 @@ export class ConfigDialog extends React.Component<any, any> {
     super(props);
     // Configure the save event
     this.state = {
-      tabName: '',
-      webExId: '',
-      webExPassword: ''
+      tabName: ''
     }
     microsoftTeams
       .settings
       .registerOnSaveHandler((saveEvent) => {
         // Save the settings for the tab and notify of success
         microsoftTeams.settings.setSettings({
-          contentUrl: contentUrl + `?webExId=${this.state.webExId}&` +
-            `webExPassword=${this.state.webExPassword}`,
+          contentUrl,
           suggestedDisplayName: this.state.tabName,
-          websiteUrl
+          websiteUrl,
+          entityId: 'wwtatc-webexintegration'
         });
         saveEvent.notifySuccess();
       });
@@ -72,28 +70,6 @@ export class ConfigDialog extends React.Component<any, any> {
                 autoFocus
                 onChange={this.tabChange}
                 value={this.state.tabName} />            
-            </Col>
-          </Row>
-          <Row>
-            <Col lg={2}>
-              <TextField
-                name='webexId'
-                hintText='WebEx UserName'
-                onChange={(e:any, webExId:string) => {
-                  this.setState({ webExId });
-                }}
-                value={this.state.webExId} />
-            </Col>
-          </Row>
-          <Row>
-            <Col lg={2}>
-              <TextField
-                hintText='WebEx Password'
-                name='webexPassword'
-                onChange={(e: any, webExPassword: string) => {
-                  this.setState({ webExPassword });
-                }}
-                value={this.state.webExPassword} />
             </Col>
           </Row>
         </Grid>
