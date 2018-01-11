@@ -13,9 +13,8 @@ let {
   }
 } = Properties;
 
-import { microsoftTeams } from '../../microsoftTeams';
-
 microsoftTeams.initialize();
+
 export class AuthDialog extends React.Component<any, any> {
   clientApplication = new UserAgentApplication(
     clientId, authority,
@@ -34,6 +33,9 @@ export class AuthDialog extends React.Component<any, any> {
       isLoggedIn: false,
       counter: 5
     };
+  }
+
+  componentWillMount() {
     if(this.clientApplication.isCallback(window.location.hash)) {
       // console.log('callback');
       this.clientApplication.handleAuthenticationResponse(
@@ -48,10 +50,13 @@ export class AuthDialog extends React.Component<any, any> {
     this.clientApplication
       .acquireTokenSilent(scopes)
       .then((accessToken: string) => {
-        microsoftTeams.authentication.notifySuccess({
-          accessToken,
-          signedInUser: this.clientApplication.getUser().name
-        });
+        microsoftTeams.getContext((context:any) => {
+          microsoftTeams.authentication.notifySuccess(JSON.stringify({
+            accessToken,
+            signedInUser: this.clientApplication.getUser().name,
+            context
+          }));
+        })
       });
   }
 
