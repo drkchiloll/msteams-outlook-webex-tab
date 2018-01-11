@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {  Grid, Row, Col } from 'react-flexbox-grid';
-import * as autobind from 'autobind-decorator';
+import autobind from 'autobind-decorator';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 
@@ -42,7 +42,8 @@ export class EventForm extends React.Component<any, any> {
               name='title'
               hintText='Title'
               style={this.styles.textField}
-              onChange={this.meetingProps} />
+              onChange={(e, value) =>
+                this.props.inputChange('title', value)} />
           </Col>
         </Row>
         <Row>
@@ -51,7 +52,8 @@ export class EventForm extends React.Component<any, any> {
               name='location'
               hintText='Location'
               style={this.styles.textField}
-              onChange={this.meetingProps} />
+              onChange={(e, value) =>
+                this.props.inputChange('location', value)} />
           </Col>
         </Row>
       </div>
