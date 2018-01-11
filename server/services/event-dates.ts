@@ -12,9 +12,7 @@ timeProc.add = function(num: any) {
 };
 
 timeProc.normalizeMsDate = function({date, tz}) {
-  return momentTz.utc(
-    moment.utc(date).format()
-  ).tz(tz).format(this.calFormat);
+  return momentTz(date).tz(tz).format(this.calFormat);
 };
 
 timeProc.uiDates = function() {
