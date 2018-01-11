@@ -12,6 +12,9 @@ router.use((req, res, next) => {
   next();
 });
 
+router.get('/webex.jpg', (req,res) => {
+  res.sendFile(path.join(__dirname, '../../public/webex.jpg'));
+});
 router.route('/')
   .get((req, res) =>
     res.sendFile(path.join(__dirname, '../../public/index.html'))
