@@ -7,3 +7,5 @@ export { bodyBuilder } from './bodyContentBuilder';
 export { processors } from './domProcessor';
 export { outlookServFactory } from './outlook-calendars';
 export { o365UserServFactory } from './o365-users';
+
+export { MSTeamsService, MsTeamsServiceFactory } from './msteams';
