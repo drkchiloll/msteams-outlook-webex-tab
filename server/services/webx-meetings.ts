@@ -56,14 +56,14 @@ export function meetingsServFactory(webex: WebEx) {
     }).then((result: any) => result);
   };
 
-  service.create = function({ subject, attendees, startDate, duration, timeZone }) {
+  service.create = function({ subject, attendees, startDate, duration, timeZone, agenda='' }) {
     const xsiType = `${xsitype}.meeting.CreateMeeting`;
     const meeting = {
       accessControl : { meetingPassword: 'pass123' },
       metaData: {
         confName: subject,
         // meetingType: '1',
-        agenda: subject
+        agenda: agenda || subject
       },
       participants: {
         maxUserNumber: 4,
@@ -100,7 +100,8 @@ export function meetingsServFactory(webex: WebEx) {
     const xsiType = `${xsitype}.meeting.GetjoinurlMeeting`;
     const content = {
       sessionKey: meetingKey,
-      attendeeName: attendee,
+      attendeeName: attendee.displayName,
+      attendeeEmail: attendee.mail,
       meetingPW: meetingPassword
     };
     return this.meetingHandler({
@@ -119,7 +120,7 @@ export function meetingsServFactory(webex: WebEx) {
       parser: 'parseJoinUrl'
     });
   };
-
+ 
   service.meetingHandler = function({xsiType, content, tagName, parser }) {
     return webex.js2xml(
       bodyBuilder(content)
@@ -128,10 +129,12 @@ export function meetingsServFactory(webex: WebEx) {
     }).then((xml:string) => {
       return webex.genXml(xml);
     }).then((xml:string) => {
+      console.log(xml);
       return webex._request({ body: xml});
     }).then((resp: any) => {
       let xml = resp;
-      return processors.parseForFailure(xml).then((result: any) => {
+      // console.log(xml);
+      return processors.parseAuthResponse(xml).then((result: any) => {
         if(result && result.error) {
           return result;
         } else {

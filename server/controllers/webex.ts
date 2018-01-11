@@ -11,6 +11,15 @@ export const webExController = (() => {
     return new WebEx({ webExID: webExId, password: webExPassword });
   };
 
+  cntrler.authenticate = function(req: Request, res: Response) {
+    let { webExId, webExPassword } = req.body;
+    const client = cntrler.createInstance({ webExId, webExPassword });
+    client
+      .userService
+      .authenticate()
+      .then(resp => res.send(resp));
+  };
+
   cntrler.getMeetings = function(req: Request, res: Response) {
     let { webExId, webExPassword } = JSON.parse(JSON.stringify(req.body));
     delete req.body.webExId;
@@ -33,15 +42,11 @@ export const webExController = (() => {
   };
 
   cntrler.createMeeting = function(req: Request, res: Response) {
-    // { title/subject, attendees, startDate, duration, timeZone }
-    let { webExId, webExPassword } = JSON.parse(JSON.stringify(req.body));
-    delete req.body.webExId;
-    delete req.body.webExPassword;
-    // console.log(req.body);
-    const client = cntrler.createInstance({ webExId, webExPassword });
+    const { webex, meeting } = req.body;
+    const client = cntrler.createInstance(webex);
     client
       .meetingsService
-      .create(req.body)
+      .create(meeting)
       .then((resp:any) => {
         if(resp && resp.error) return res.status(401);
         res.send(resp)
@@ -49,28 +54,22 @@ export const webExController = (() => {
   };
 
   cntrler.getJoinUrls = function(req: Request, res: Response) {
-    let { webExId, webExPassword } = JSON.parse(JSON.stringify(req.body));
-    delete req.body.webExId;
-    delete req.body.webExPassowrd;
-    const client = cntrler.createInstance({ webExId, webExPassword });
+    const { webex, meetingKey, meetingPassword, attendee } = req.body;
+    const client = cntrler.createInstance(webex);
     client
       .meetingsService
-      .joinUrls(req.body)
+      .joinUrls({meetingKey, meetingPassword, attendee})
       .then((xml: any) => res.send(xml));
   };
 
   cntrler.getHostJoinUrl = function(req: Request, res: Response) {
-    let { webExId, webExPassword } = JSON.parse(JSON.stringify(req.body));
-    delete req.body.webExId;
-    delete req.body.webExPassowrd;
-    const client = cntrler.createInstance({ webExId, webExPassword });
+    const { webex, meetingKey } = req.body;
+    const client = cntrler.createInstance(webex);
     client
       .meetingsService
-      .hostJoinUrl(req.body)
-      .then((resp: any) => {
-        return res.send(resp);
-      });
-  }
+      .hostJoinUrl({ meetingKey })
+      .then((resp: any) => res.send(resp));
+  };
 
   return cntrler;
 })();
