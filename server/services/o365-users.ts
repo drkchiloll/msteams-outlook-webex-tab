@@ -23,6 +23,14 @@ export function o365UserServFactory(graph: MsGraph) {
     });
   };
 
+  service.getMe = function() {
+    return graph._request({
+      method: 'get',
+      path: '/beta/me',
+      body: {}
+    });
+  }
+
   service.getPhoto = function(id) {
     let method = 'get',
         body = {},
