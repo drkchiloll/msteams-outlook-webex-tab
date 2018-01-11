@@ -18,10 +18,22 @@ export interface Credentials {
   };
 }
 
+export interface UserServiceFactory {
+  authenticate():Promise<any>;
+  get(string): Promise<any>;
+}
+
+export interface MeetingServiceFactory {
+  joinUrls(Object): Promise<any>;
+  hostJoinUrl(Object): Promise<any>;
+  meetingHandler(Object): Promise<any>;
+  timeZone: Object[];
+}
+
 export class WebEx {
   securityContext: Credentials;
-  userService: any;
-  meetingsService: any;
+  userService: UserServiceFactory;
+  meetingsService: MeetingServiceFactory;
   constructor({webExID, password}: any) {
     this.securityContext = {
       securityContext: { webExID, password, siteName }
@@ -43,9 +55,6 @@ export class WebEx {
           </header>
           <body>${bodyContent}</body>
         </serv:message>`
-        // .replace(/[\n\r]+/g, ' ')
-        // .replace(/\s\s+/g, ' ')
-        // .replace(/>\s</g, '><')
     );
   };
 
@@ -57,7 +66,8 @@ export class WebEx {
         strictSSL: false,
         body: options.body
       }, (err: any, resp: any, body: any) => {
-        console.log(body);
+        // console.log(err);
+        // console.log(body);
         resolve(body)
       });
     });
