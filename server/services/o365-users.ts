@@ -26,7 +26,7 @@ export function o365UserServFactory(graph: MsGraph) {
   service.getMe = function() {
     return graph._request({
       method: 'get',
-      path: '/beta/me',
+      path: '/beta/me?select=displayName,mail,id',
       body: {}
     });
   }
