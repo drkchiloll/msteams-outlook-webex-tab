@@ -10,11 +10,14 @@ router.use((req, res, next) => {
   next();
 });
 
-router.route('/meetings')
+router.route('/webex-auth')
+  .post(webExController.authenticate);
+
+router.route('/webex-meetings')
   .get(webExController.getMeetings)
   .post(webExController.createMeeting)
 
-router.route('/meeting/:meetingKey')
+router.route('/webex-meeting/:meetingKey')
   .get(webExController.getMeeting)
 
 router.route('/webex-joinurl')
@@ -23,6 +26,12 @@ router.route('/webex-joinurl')
 router.route('/webex-hostjoinurl')
   .post(webExController.getHostJoinUrl)
 
+router.route('/teams')
+  .get(msTeamsController.teamMembers)
+
+router.route('/msteams-dialoghandler')
+  .post(msTeamsController.webExDialogConnector);
+
 router.route('/outlook-events')
   .get(msTeamsController.getEvents)
   .post(msTeamsController.createEvent)
@@ -30,13 +39,19 @@ router.route('/outlook-events')
 router.route('/outlook-conflict-finder')
   .post(msTeamsController.conflictFinder)
 
+router.get('/me', msTeamsController.me);
+
 router.route('/users')
   .get(msTeamsController.getUsers)
 
 router.route('/users/:id/photo')
   .get(msTeamsController.getUserPhoto)
 
-router.post('/subscriptions', msTeamsController.subscriptions);
+router.route('/subscriptions')
+  .post(msTeamsController.createSubscription)
+
+router.route('/subscriptions/:id')
+  .delete(msTeamsController.deleteSubscription);
 
 router.route('/webhook')
   .post(msTeamsController.hooks)
