@@ -1,4 +1,5 @@
 import * as React from 'react';
+const { Component } = React;
 import * as Promise from 'bluebird';
 import * as style from './style.css';
 import { RouteComponentProps } from 'react-router';
@@ -7,9 +8,13 @@ import autobind from 'autobind-decorator';
 import { UserAgentApplication } from 'msalx';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
-import { microsoftTeams } from '../../microsoftTeams';
 import { Properties } from '../../properties';
 import * as openSocket from 'socket.io-client';
+
+import {
+  Api, WebExAuth
+} from '../../middleware';
+
 const {
   AzureApp: {
     clientId, authority, scopes,
@@ -34,7 +39,6 @@ export namespace App {
 
   export interface State {
     signedInUser: string;
-    isLoggedIn: boolean;
     accessToken: string;
     webExSettingsEditor: boolean;
     events: any;
@@ -48,6 +52,7 @@ export namespace App {
     newMeeting: any;
     newMeetingBtnLabel: string;
     webex: any;
+    webExAuthResult: string;
   }
 }
 
@@ -56,7 +61,7 @@ import {
   EventForm, EventDates, WebExSettings
 } from '../../components';
 
-export class App extends React.Component<App.Props, App.State> {
+export class App extends Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
     clientId, authority,
     (errDesc:string, token:string, err:string, tokenType: string) => {
@@ -67,28 +72,37 @@ export class App extends React.Component<App.Props, App.State> {
 
   // Using setTimeout because we don't want to Call this TOO Early
   callTeams = function() {
-    return setTimeout(() => {
+    setTimeout(() => {
       microsoftTeams.authentication.authenticate({
         url: '/auth',
         width: 575,
         height: 650,
-        successCallback: ({
-          accessToken, signedInUser
-        }) => {
-          // Note: token is only good for one hour
-          let webex: any;
-          webex = JSON.parse(localStorage.getItem('webex'));
-          if(!webex) webex = {};
-          this.setState({ accessToken, signedInUser, webex });
+        successCallback: (result) => {
+          let {
+            accessToken, signedInUser, context
+          } = JSON.parse(result);
+          this.authActions({ accessToken, signedInUser, context });
+          // let subscriptionId = localStorage.getItem('subscriptionId');
+          this.setState({ accessToken, signedInUser });
           if(this.state.webex.webExId) {
             return this.getEvents();
-          } else {
-            this.openWebExSettings();
+            // .then(() => {
+            //   if(!subscriptionId) {
+            //     this.createWebHook();
+            //   } else {
+            //     return this.callServer({
+            //       path: 'subscriptions',
+            //       method: 'delete',
+            //       id: subscriptionId
+            //     }).then(() => this.createWebHook())
+            //   }
+            // })
           }
         },
-        failureCallback: function (err) { }
+        failureCallback: function(err) { alert(err.toString()) }
       });
-    }, 250);
+    }, 500)
+
   }
 
   usersHtml(users?) {
@@ -128,11 +142,12 @@ export class App extends React.Component<App.Props, App.State> {
     }
   }
 
+  api:Api = null;
+
   constructor(props) {
     super(props);
     this.state = {
       signedInUser: '',
-      isLoggedIn: false,
       accessToken: null,
       webExSettingsEditor: false,
       evtHtml: <div></div>,
@@ -155,26 +170,12 @@ export class App extends React.Component<App.Props, App.State> {
       organizer: null,
       attendees: [],
       newMeetingBtnLabel: 'Schedule Meeting',
-      webex: { webExId: '', webExPassword: '' }
+      webex: { webExId: '', webExPassword: '' },
+      webExAuthResult: ''
     };
-    microsoftTeams.initialize();
-    if(window.self !== window.top) {
-      this.callTeams();
-    } else {
-      if(this.clientApplication.isCallback(window.location.hash)) {
-        this.clientApplication.handleAuthenticationResponse(
-          window.location.hash
-        );
-      } else {
-        this.clientApplication
-          .loginPopup(scopes)
-          .then(this.getAccessToken)
-          .then((accessToken) => {
-            let signedInUser = this.clientApplication.getUser().name;
-            this.setState({ accessToken, signedInUser });
-          });
-      }
-    }
+    this.api = new Api();
+    this.api.initialize();
+    // Retrieve Credential Stuff
     socket.on('notification_received', (data: any) => {
       let { newMeeting } = this.state;
       this.getEvents().then(() => {
@@ -187,8 +188,61 @@ export class App extends React.Component<App.Props, App.State> {
     });
   }
 
-  componentWillMount() {
-    // localStorage.removeItem('webex');
+  componentDidMount() {
+    microsoftTeams.initialize();
+    // Clear LocalStorage
+    // this.api.resetLocalStorage();
+    this.credCheck();
+  }
+
+  @autobind
+  credCheck() {
+    let { accessToken, webExSettingsEditor, webex, signedInUser } = this.state;
+    if(!this.api.webex) {
+      webExSettingsEditor = true;
+      this.setState({ webExSettingsEditor });
+    } else {
+      this.setState({ webex: this.api.webex });
+    }
+    // let subscriptionId = localStorage.getItem('subscriptionId');
+    // alert(subscriptionId);
+    if(!accessToken && this.api.token && this.api.signedInUser)
+      this.setState({ accessToken: this.api.token, signedInUser: this.api.signedInUser });
+    if(this.api.token) {
+      //Check if it's still Good
+      this.api
+        .msteamsGetMe()
+        .then((resp: any) => {
+          if(resp && resp.status) this.callTeams();
+          else {
+            if(this.api.webex.webExId || this.api.webex.webExPassword) {
+              return this.getEvents();
+              // .then(() => {
+              //   if(!subscriptionId) {
+              //     return this.createWebHook();
+              //   } else {
+              //     return this.callServer({
+              //       path: 'subscriptions',
+              //       method: 'delete',
+              //       id: subscriptionId
+              //     }).then(() => this.createWebHook())
+              //   }
+              // })
+            }
+          }
+        })
+    } else {
+      this.callTeams();
+    }
+  }
+
+  @autobind
+  authActions({ accessToken, signedInUser, context={} }) {
+    this.api.setToken(accessToken);
+    this.api.setUser(signedInUser);
+    if(Object.keys(context).length > 0) {
+      this.api.setTeamsContext(context);
+    }
   }
 
   @autobind
@@ -196,26 +250,18 @@ export class App extends React.Component<App.Props, App.State> {
     let { organizer, newMeeting } = this.state;
     newMeeting.newEvent = true;
     if(!organizer) {
-      this.callServer({
-        method: 'get',
-        path: 'users',
-        query: `&users=${this.state.signedInUser}`
-      }).then(({ value }: any) => {
-        let organizer = value[0];
-        this.callServer({
-          method: 'get',
-          path: `users/${organizer.id}/photo`
+      return this.api
+        .msteamsGetMe()
+        .then((me) => {
+          organizer = me;
+          return this.api.msteamsGetPhoto(organizer.id);
         }).then((binaryImg: any) => {
-          if(binaryImg && !binaryImg.message) {
+          if(binaryImg) {
             let img = new Buffer(binaryImg, 'binary').toString('base64');
             organizer.photo = 'data:image/jpg;base64,' + img;
           }
-          this.setState({
-            newMeeting,
-            organizer
-          });
+          this.setState({ newMeeting, organizer });
         });
-      });
     } else {
       this.setState({ newMeeting });
     }
@@ -223,100 +269,32 @@ export class App extends React.Component<App.Props, App.State> {
 
   @autobind
   eventFormHandler(name, value) {
-    if(name === 'endDate') alert(value);
     let { newMeeting } = this.state;
     newMeeting[name] = value;
     this.setState({ newMeeting });
-    // alert(JSON.stringify(this.state.newMeeting));
-  }
-
-  formatTime(date:string, time:string) {
-    if(time.split(' ')[1] === 'am') {
-      switch(time.split(':')[0]) {
-        case '12':
-          return date + 'T' + '00:' + time.split(':')[1].split(' ')[0];
-        case '11':
-        case '10':
-          return date + 'T' + time.split(' ')[0];
-        default:
-          return date + 'T' + '0' + time.split(' ')[0];
-      }
-    } else {
-      switch(time.split(':')[0]) {
-        case '12':
-          return date + 'T' + time.split(' ')[0];
-        default:
-          return date + 'T' + (parseInt(time.split(':')[0],10) + 12) + 
-            ':' + time.split(':')[1].split(' ')[0];
-      }
-    }
-  }
-
-  @autobind
-  normalizeDates() {
-    let { newMeeting:
-      {startDate, startTime, endDate, endTime}
-    } = this.state;
-    let start = moment(startDate).format('YYYY-MM-DD'),
-        end = moment(endDate).format('YYYY-MM-DD');
-    return {
-      start: {
-        dateTime: moment(this.formatTime(start, startTime)).format('YYYY-MM-DDTHH:mm:ss'),
-        timeZone: momenttz.tz(momenttz.tz.guess()).format('z')
-      },
-      end: {
-        dateTime: moment(this.formatTime(end, endTime)).format('YYYY-MM-DDTHH:mm:ss'),
-        timeZone: momenttz.tz(momenttz.tz.guess()).format('z')
-      }
-    };
   }
 
   @autobind
   attendeeSelector(input, index) {
-    let { users, attendees } = this.state;
+    let { users, attendees, accessToken } = this.state;
     let selectedUser = users[index];
-    return this.callServer({
-      method: 'get',
-      path: `users/${selectedUser.id}/photo`
-    }).then((binaryImg: any) => {
-      if(binaryImg && !binaryImg.message) {
-        let img = new Buffer(binaryImg, 'binary').toString('base64');
-        selectedUser.photo = `data:image/jpg;base64,${img}`;
-      }
-      return selectedUser;
-    }).then(() => {
-      // Check Availability
-      let req:any = {
-        timeZone: momenttz.tz.guess(),
-        attendees: [{
-          type:'required',
-          emailAddress: {
-            name: selectedUser.displayName,
-            address: selectedUser.mail
-          }
-        }],
-        ...this.normalizeDates(),
-        percentage: '80'
-      };
-      return this.callServer({
-        method: 'post',
-        path: `outlook-conflict-finder`,
-        body: req
-      });
-    }).then((result:any) => {
-      if(result.emptySuggestionsReason) {
-        selectedUser.status = 'busy';
-      } else {
-        selectedUser.status = 'free';
-      }
-      attendees.push(selectedUser);
-      this.setState({ attendees });
-      this.setState({
-        searchText: '',
-        users: null,
-        autoCompleteMenuHeight: 25
-      });
-    })
+    return this.api
+      .msteamsGetPhoto(selectedUser.id)
+      .then((binaryImg:any) => {
+        if(binaryImg) {
+          let img = new Buffer(binaryImg, 'binary').toString('base64');
+          selectedUser.photo = `data:image/jpg;base64,${img}`;
+        }
+        return selectedUser;
+      }).then(() => {
+        attendees.push(selectedUser);
+        this.setState({ attendees });
+        this.setState({
+          searchText: '',
+          users: null,
+          autoCompleteMenuHeight: 25
+        });
+      })
   }
 
   render() {
@@ -326,7 +304,7 @@ export class App extends React.Component<App.Props, App.State> {
         <div style={{fontSize: '90%'}}>
           <Drawer
             docked={true}
-            width={300}
+            width={290}
             open={true} >
             {this.state.evtHtml}
             <RaisedButton
@@ -343,7 +321,7 @@ export class App extends React.Component<App.Props, App.State> {
           </Drawer>
         </div>
         <Paper style={{
-          left: 305, position: 'fixed', top: 0, height: 'auto',
+          left: 175, position: 'fixed', top: 0, height: 'auto',
           display: this.state.newMeeting.newEvent ? 'inline-block' : 'none',
           width: 650
         }} zDepth={2} >
@@ -368,19 +346,17 @@ export class App extends React.Component<App.Props, App.State> {
                         autoCompleteMenuHeight: 25
                       });
                     this.setState({ searchText: text });
-                    this.callServer({
-                      method: 'get',
-                      path: 'users',
-                      query: `&users=${text}`
-                    }).then(({value}:any) => {
-                      if(value.length === 0) {
-                        value.push({
-                          id: '0',
-                          displayName: `We didn't find any matches`
-                        });
-                      }
-                      this.setState({ users: value, autoCompleteMenuHeight: 'auto' });
-                    });
+                    this.api
+                      .msteamsUserSearch(text)
+                      .then(({ value }) => {
+                        if(value.length === 0) {
+                          value.push({
+                            id: '0',
+                            displayName: `We didn't find any matches`
+                          });
+                        }
+                        this.setState({ users: value, autoCompleteMenuHeight: 'auto' });
+                      });
                   }}
                   onNewRequest={this.attendeeSelector}
                   searchText={this.state.searchText}
@@ -490,60 +466,70 @@ export class App extends React.Component<App.Props, App.State> {
                       style={{ marginLeft: '10px', verticalAlign: 'middle', color: '#EDE7F6' }}>
                     </i>
                   }
-                  onClick={() => {
-                    alert(JSON.stringify(this.state.newMeeting));
-                    this.setState({ newMeetingBtnLabel: null });
-                    let { newMeeting, attendees } = this.state;
-                    let outlookEvent: any = {
-                      subject: newMeeting.title,
-                      location: { displayName: newMeeting.location },
-                      start: newMeeting.start,
-                      end: newMeeting.end,
-                      attendees: (() => {
-                        return attendees.map((attendee) => ({
-                          emailAddress: { address: attendee.mail, name: attendee.displayName },
-                          type: 'required'
-                        }))
-                      })()
-                    };
-                    const webexEvent = {
-                      webExId: this.state.webex.webExId,
-                      webExPassword: this.state.webex.webExPassword,
-                      subject: newMeeting.title,
-                      attendees,
-                      startDate: moment(new Date(newMeeting.start.dateTime)).format('MM/DD/YYYY HH:mm:mm'),
-                      duration: 20,
-                      timeZone: newMeeting.start.timeZone
-                    };
-                    // Create the WebEx Event First
-                    return this.callServer({
-                      method: 'post',
-                      path: 'meetings',
-                      body: webexEvent
-                    }).then(({meetingKey}:any) => {
-                      outlookEvent.body = {
-                        contentType: 'text',
-                        content: meetingKey
-                      };
-                      return this.callServer({
-                        method: 'post',
-                        path: 'outlook-events',
-                        body: outlookEvent
-                      });
-                    });
-                  }} />
+                  onClick={this.createMeeting} />
               </Col>
             </Row>
           </Grid>
         </Paper>
         <WebExSettings
+          api={this.api}
           webex={this.state.webex}
           open={this.openWebExSettings}
+          save={this.saveWebExSettings}
+          authResult={this.state.webExAuthResult}
           close={this.closeWebExSettings}
-          onWebExChange={this.handleWebExCredentials}
-          webExSettingsEditor={this.state.webExSettingsEditor} />
+          onWebExChange={this.handleWebExInputs}
+          webExSettingsEditor={this.state.webExSettingsEditor}
+          meetNow={this.createWebExMeeting} />
       </div>
     );
+  }
+
+  @autobind
+  createWebExMeeting() {
+    let {
+      webex: {webExId, webExPassword},
+      attendees,
+      newMeeting
+    } = this.state;
+    const webExEvent: any = {
+      webExId, webExPassword,
+      subject: newMeeting.title || 'Meet Now Conference',
+      attendees
+    };
+  }
+
+  @autobind
+  createMeeting() {
+    this.setState({ newMeetingBtnLabel: null });
+    let { newMeeting, attendees } = this.state;
+    let outlookEvent: any = this.api.msteamsGenerateMeetingRequest(newMeeting, attendees);
+    const webExEvent: any = this.api.webExGenerateMeetingRequest({
+      startDate: outlookEvent.start.dateTime,
+      subject: outlookEvent.subject,
+      duration: null,
+      attendees
+    });
+    return this.api
+      .webExCreateMeeting(webExEvent)
+      .then(({ meetingKey }) => {
+        outlookEvent['body'] = {
+          contentType: 'text',
+          content: meetingKey
+        };
+        return this.api.msteamsCreateMeeting(outlookEvent);
+      }).then(() => {
+        let { newMeetingBtnLabel, attendees } = this.state;
+        const newMeeting = this.api.msteamsResetObject;
+        newMeetingBtnLabel = 'Schedule Meeting';
+        attendees = [];
+        this.setState({
+          newMeeting,
+          attendees,
+          newMeetingBtnLabel
+        });
+        return this.getEvents();
+      })
   }
 
   @autobind
@@ -559,42 +545,16 @@ export class App extends React.Component<App.Props, App.State> {
 
   @autobind
   getEvents() {
-    let events: any;
-    return this.callServer({
-      path: 'outlook-events',
-      method: 'get'
-    }).then((events: any) => {
-      events = events;
-      return Promise.map(Object.keys(events), (key:string) => {
-        return Promise.map(events[key], (evt: any, i: any) => {
-          let path: string;
-          let options: any = {
-            webExId: this.state.webex.webExId,
-            webExPassword: this.state.webex.webExPassword,
-            meetingKey: evt.webExMeetingKey
-          };
-          if(evt.isOrganizer) {
-            path = 'webex-hostjoinurl';
-          } else {
-            options.attendee = this.state.signedInUser;
-            options.meetingPassword = 'pass123';
-            path = 'webex-joinurl';
-          }
-          return this.callServer({
-            path,
-            method: 'post',
-            body: options
-          }).then(({joinUrl}: any) => {
-            events[key][i].joinUrl = joinUrl;
-            return evt;
-          })
-        })
-      }).then(() => {
+    let { accessToken } = this.state;
+    return this.api
+      .msteamsGetOutlookEvents({ token: accessToken })
+      .then((events) => {
+        if(events) return this.api.msteamsEventsProcessing(events);
+        else this.callTeams();
+      }).then((events) => {
         let evtHtml = this._renderEvents(events);
         this.setState({ events, evtHtml });
-        return;
       });
-    });
   }
 
   @autobind
@@ -629,10 +589,14 @@ export class App extends React.Component<App.Props, App.State> {
   }
 
   @autobind
-  handleWebExCredentials(propName, value) {
-    let { webex } = this.state;
-    webex[propName] = value;
-    this.setState({ webex });
+  handleWebExInputs(propName, value) {
+    let { webex, webExAuthResult } = this.state;
+    if(propName === 'authResult') {
+      this.setState({ webExAuthResult: '' });
+    } else {
+      webex[propName] = value;
+      this.setState({ webex });
+    }
   }
 
   @autobind
@@ -641,37 +605,33 @@ export class App extends React.Component<App.Props, App.State> {
   }
 
   @autobind
-  closeWebExSettings() {
-    this.setState({ webExSettingsEditor: false });
-    // localStorage.setItem('webex', JSON.stringify(this.state.webex));
-    // this.getEvents();
-    // return this.callServer({
-    //   path: 'subscriptions',
-    //   method: 'post',
-    //   body: {
-    //     changeType: 'created,updated',
-    //     notificationUrl: 'https://msteams-webex.ngrok.io/api/webhook',
-    //     resource: 'me/events',
-    //     clientState: 'subscription-identifier',
-    //     expirationDateTime: moment().add('1', 'days').utc().format()
-    //   }
-    // });
+  saveWebExSettings() {
+    let { webex } = this.state;
+    return this.api
+      .webExAuthentication(webex)
+      .then(result => {
+        if(result && result.authentication) {
+          if(result.authentication === 'SUCCESS') {
+            localStorage.setItem('webex', JSON.stringify(this.state.webex));
+            this.getEvents();
+          }
+          this.setState({ webExAuthResult: result.authentication });
+        } else {
+          this.setState({ webExAuthResult: 'unknown error' });
+        }
+      });
   }
 
   @autobind
-  callServer({ method, body = {}, path, query = '' }) {
-    let url = `/api/${path}?token=${this.state.accessToken}`;
-    if(method === 'get' && path.includes('outlook')) {
-      url += `&timezone=${momenttz.tz.guess()}`;
-    } else if(query) {
-      url += query;
-    }
-    return $.ajax({
-      url,
-      method,
-      headers,
-      data: JSON.stringify(body)
-    });
+  closeWebExSettings() {
+    this.setState({ webExSettingsEditor: false });
+  }
+
+  @autobind
+  createWebHook() {
+    return this.api
+      .msteamsCreateWebHook()
+      .then((subscription) => console.log(subscription));
   }
 
   @autobind
@@ -718,6 +678,7 @@ export class App extends React.Component<App.Props, App.State> {
             rightIconButton={
               <RaisedButton
                 labelStyle={{ fontSize: '90%' }}
+                disabled={!evt.joinUrl}
                 style={{
                   marginTop: '15px', marginRight: '10px',
                   width: '60px', minWidth: '60px'
