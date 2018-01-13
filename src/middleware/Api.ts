@@ -34,7 +34,6 @@ export interface WebExMeetingResponse {
 }
 
 export interface WebExJoinUrl {
-  webex: WebExAuth;
   host: boolean;
   meetingKey: string;
   meetingPassword?: string;
@@ -196,21 +195,21 @@ export class Api {
 
   webExGetJoinUrl(params:WebExJoinUrl) {
     let path: string, body: any;
+    const webex = { ...this.webex }
     if(params.host) {
       path = `/api/webex-hostjoinurl`;
       body = {
-        webex: params.webex,
         meetingKey: params.meetingKey
       };
     } else {
       path = `/api/webex-joinurl`;
       body = {
-        webex: params.webex,
         meetingKey: params.meetingKey,
         meetingPassword: 'pass123',
         attendee: params.attendee
       };
     }
+    body['webex'] = webex;
     return this._request(this.options(
       path, 'post', JSON.stringify(body)
     ))
