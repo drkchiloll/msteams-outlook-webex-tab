@@ -1,5 +1,6 @@
 import * as React from 'react';
 import autobind from 'autobind-decorator';
+import * as openSocket from 'socket.io-client';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import {
   Drawer, FlatButton,
@@ -7,15 +8,63 @@ import {
   Checkbox
 } from 'material-ui';
 
+import {
+  WebExMeetNowDialog
+} from '../MeetNow';
+
+
 import ActionLock from 'material-ui/svg-icons/action/lock';
 import ActionLockOpen from 'material-ui/svg-icons/action/lock-open';
 
 export class WebExSettings extends React.Component<any,any> {
-  state = { passwordField: 'password' };
+  state = {
+    passwordField: 'password',
+    saveBtnLabel: 'Save',
+    saveBtnRefreshIcon: false,
+    backGroundColor: 'white',
+    webExMeetingBtnLabel: 'MEET NOW',
+    meetNowDialog: false
+  };
+
+  componentWillReceiveProps(props) {
+    let { authResult } = props;
+    if(authResult === 'SUCCESS') {
+      this.updateState('success');
+    } else if(authResult === 'FAILURE') {
+      this.props.onWebExChange('authResult', null);
+      this.updateState('failure');
+    }
+  }
+
+  @autobind
+  updateState(action: string) {
+    let {
+      saveBtnLabel,
+      saveBtnRefreshIcon,
+      backGroundColor
+    } = this.state;
+    if(action === 'checking') {
+      saveBtnLabel = '';
+      backGroundColor = 'white';
+      saveBtnRefreshIcon = true;
+    } else if(action === 'success') {
+      saveBtnLabel = 'Continue';
+      saveBtnRefreshIcon = false;
+      backGroundColor = '#4CAF50';
+    } else if(action === 'failure') {
+      saveBtnLabel = 'Auth Error';
+      saveBtnRefreshIcon = false;
+      backGroundColor = '#F44336'
+    }
+    this.setState({ saveBtnLabel, saveBtnRefreshIcon, backGroundColor });
+  }
 
   render() {
     let {
-      webExSettingsEditor, webex: { webExId, webExPassword }
+      api,
+      webex,
+      webExSettingsEditor,
+      authResult
     } = this.props;
     return (
       <div>
@@ -26,27 +75,28 @@ export class WebExSettings extends React.Component<any,any> {
             <i className='mdi mdi-account-settings-variant mdi-18px'
                style={{ color: 'rgb(55,103,52)' }} />
           }
-          style={{ position: 'absolute', top: 0, right: 0, color: 'rgb(55,103,52)' }}
+          style={{float: 'right', color: 'rgb(55,103,52)' }}
           onClick={this.props.open} />
         <Drawer
           open={webExSettingsEditor}
           openSecondary={true}
-          containerStyle={{ height: 240 }}
-          width={320}>
+          containerStyle={{ height: 235 }}
+          width={275}>
           <div style={{marginLeft:'20px'}}>
             <Row middle='xs'>
               <Col xs={12}>
                 <div style={{textAlign: 'center', marginTop:'15px', marginBottom: '10px'}}>
                   <i className='mdi mdi-cisco-webex mdi-24px'
                     style={{ color: 'rgb(55,103,52)' }} />
-                  <strong style={{fontSize:'110%', marginBottom:'-20px'}}> WebEx Settings </strong>
+                  <strong style={{fontSize:'110%', marginBottom:'-20px'}}> Cisco WebEx Settings </strong>
                 </div>
               </Col>
             </Row>
             <Row>
               <Col xs={12}>
                 <TextField
-                  value={webExId}
+                  value={webex.webExId}
+                  autoFocus
                   hintText='WebEx ID'
                   onChange={(e, val) => {
                     this.props.onWebExChange('webExId', val);
@@ -56,7 +106,7 @@ export class WebExSettings extends React.Component<any,any> {
             <Row>
               <Col xs={9}>
                 <TextField
-                  value={webExPassword}
+                  value={webex.webExPassword}
                   fullWidth={true}
                   hintText='WebEx Password'
                   type={this.state.passwordField}
@@ -86,20 +136,50 @@ export class WebExSettings extends React.Component<any,any> {
                   fullWidth={true}
                   style={{ marginTop: '25px' }}
                   label='Cancel'
+                  hoverColor='#FFCDD2'
                   onClick={this.props.close} />
               </Col>
               <Col xs={6}>
                 <FlatButton
                   fullWidth={true}
                   style={{ marginTop: '25px' }}
-                  label='Save'
+                  backgroundColor={this.state.backGroundColor}
+                  icon={
+                    <i className='mdi mdi-refresh mdi-spin mdi-24px' 
+                      style={{
+                        display: this.state.saveBtnRefreshIcon ? 'inline-block': 'none',
+                        color: '#673AB7'
+                      }} />
+                  }
+                  hoverColor='#D1C4E9'
+                  label={this.state.saveBtnLabel}
                   primary={true}
-                  onClick={this.props.close} />
+                  onClick={this.saveCredentials} />
               </Col>
             </Row>
           </div>
         </Drawer>
       </div>
     );
+  }
+
+  @autobind
+  saveCredentials() {
+    let { webex } = this.props,
+        { saveBtnLabel, backGroundColor } = this.state;
+    if(saveBtnLabel === 'Continue') {
+      this.props.onWebExChange('authResult', null);
+      this.setState({
+        backGroundColor: 'white',
+        saveBtnLabel: 'Save'
+      });
+      // this.props.close();
+    } else if(saveBtnLabel === 'Save') {
+      this.updateState('checking');
+      this.props.save();
+    } else if(saveBtnLabel === 'Auth Error') {
+      this.updateState('checking');
+      this.props.save();
+    }
   }
 }
