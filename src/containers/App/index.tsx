@@ -3,6 +3,7 @@ const { Component } = React;
 import * as Promise from 'bluebird';
 import * as style from './style.css';
 import { RouteComponentProps } from 'react-router';
+import { Link } from 'react-router-dom';
 import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
 import { UserAgentApplication } from 'msalx';
@@ -31,18 +32,15 @@ import {
   makeSelectable, TextField,
   DatePicker, SelectField, MenuItem,
   Paper, AutoComplete, Avatar,
-  IconButton
+  IconButton, Dialog, FlatButton
 } from 'material-ui';
 
 export namespace App {
   export interface Props extends RouteComponentProps<void> {}
-
   export interface State {
-    signedInUser: string;
     accessToken: string;
     webExSettingsEditor: boolean;
     events: any;
-    showPanel: boolean;
     searchText: string;
     evtHtml: any;
     organizer: any;
@@ -53,12 +51,15 @@ export namespace App {
     newMeetingBtnLabel: string;
     webex: any;
     webExAuthResult: string;
+    meetNowDialog: boolean;
+    choiceDialog: boolean;
+    hasSubentityId: boolean;
   }
 }
 
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import {
-  EventForm, EventDates, WebExSettings
+  EventForm, EventDates, WebExSettings, WebExMeetNowDialog
 } from '../../components';
 
 export class App extends Component<App.Props, App.State> {
@@ -70,39 +71,35 @@ export class App extends Component<App.Props, App.State> {
     }, { redirectUri }
   )
 
-  // Using setTimeout because we don't want to Call this TOO Early
   callTeams = function() {
-    setTimeout(() => {
-      microsoftTeams.authentication.authenticate({
-        url: '/auth',
-        width: 575,
-        height: 650,
-        successCallback: (result) => {
-          let {
-            accessToken, signedInUser, context
-          } = JSON.parse(result);
-          this.authActions({ accessToken, signedInUser, context });
-          // let subscriptionId = localStorage.getItem('subscriptionId');
-          this.setState({ accessToken, signedInUser });
-          if(this.state.webex.webExId) {
-            return this.getEvents();
-            // .then(() => {
-            //   if(!subscriptionId) {
-            //     this.createWebHook();
-            //   } else {
-            //     return this.callServer({
-            //       path: 'subscriptions',
-            //       method: 'delete',
-            //       id: subscriptionId
-            //     }).then(() => this.createWebHook())
-            //   }
-            // })
-          }
-        },
-        failureCallback: function(err) { alert(err.toString()) }
-      });
-    }, 500)
-
+    microsoftTeams.authentication.authenticate({
+      url: '/auth',
+      width: 575,
+      height: 650,
+      successCallback: (result) => {
+        let {
+          accessToken, signedInUser, context
+        } = JSON.parse(result);
+        this.authActions({ accessToken, signedInUser, context });
+        // let subscriptionId = localStorage.getItem('subscriptionId');
+        this.setState({ accessToken });
+        if(this.state.webex.webExId) {
+          return this.getEvents();
+          // .then(() => {
+          //   if(!subscriptionId) {
+          //     this.createWebHook();
+          //   } else {
+          //     return this.callServer({
+          //       path: 'subscriptions',
+          //       method: 'delete',
+          //       id: subscriptionId
+          //     }).then(() => this.createWebHook())
+          //   }
+          // })
+        }
+      },
+      failureCallback: function(err) { alert(err.toString()) }
+    });
   }
 
   usersHtml(users?) {
@@ -147,12 +144,10 @@ export class App extends Component<App.Props, App.State> {
   constructor(props) {
     super(props);
     this.state = {
-      signedInUser: '',
       accessToken: null,
       webExSettingsEditor: false,
       evtHtml: <div></div>,
       events: null,
-      showPanel: false,
       newMeeting: {
         title: '',
         newEvent: false,
@@ -171,11 +166,13 @@ export class App extends Component<App.Props, App.State> {
       attendees: [],
       newMeetingBtnLabel: 'Schedule Meeting',
       webex: { webExId: '', webExPassword: '' },
-      webExAuthResult: ''
+      webExAuthResult: '',
+      meetNowDialog: false,
+      choiceDialog: true,
+      hasSubentityId: true
     };
     this.api = new Api();
     this.api.initialize();
-    // Retrieve Credential Stuff
     socket.on('notification_received', (data: any) => {
       let { newMeeting } = this.state;
       this.getEvents().then(() => {
@@ -186,18 +183,24 @@ export class App extends Component<App.Props, App.State> {
         });
       });
     });
+    microsoftTeams.initialize();
   }
 
-  componentDidMount() {
-    microsoftTeams.initialize();
+  componentWillMount() {
+    microsoftTeams.getContext((context: microsoftTeams.Context) => {
+      if(context.subEntityId) {
+        window.location.pathname = '/join-webex';
+      } else {
+        this.setState({ hasSubentityId: false });
+      }
+    });
     // Clear LocalStorage
     // this.api.resetLocalStorage();
-    this.credCheck();
   }
 
   @autobind
   credCheck() {
-    let { accessToken, webExSettingsEditor, webex, signedInUser } = this.state;
+    let { accessToken, webExSettingsEditor, webex } = this.state;
     if(!this.api.webex) {
       webExSettingsEditor = true;
       this.setState({ webExSettingsEditor });
@@ -207,7 +210,7 @@ export class App extends Component<App.Props, App.State> {
     // let subscriptionId = localStorage.getItem('subscriptionId');
     // alert(subscriptionId);
     if(!accessToken && this.api.token && this.api.signedInUser)
-      this.setState({ accessToken: this.api.token, signedInUser: this.api.signedInUser });
+      this.setState({ accessToken: this.api.token });
     if(this.api.token) {
       //Check if it's still Good
       this.api
@@ -298,30 +301,51 @@ export class App extends Component<App.Props, App.State> {
   }
 
   render() {
-    const { children } = this.props;
     return (
       <div>
-        <div style={{fontSize: '90%'}}>
+        <Dialog title={
+          <span className='mdi mdi-cisco-webex mdi-18px'>
+            &nbsp;Welcome
+          </span>}
+          open={this.state.choiceDialog && !this.state.hasSubentityId}
+          actions={[
+            <FlatButton label='Join Meeting'
+              onClick={() => {window.location.pathname = '/join-webex' }} />,
+            <FlatButton label='Authorize Application' 
+              onClick={() => {
+                this.setState({ choiceDialog: false })
+                this.credCheck();
+              }} />
+          ]} >
+          <br/>
+          In Order to Schedule a Meeting, you will have to Authorize this application access to certain elements with
+          Office 365.
+        </Dialog>
+        <div style={{fontSize: '90%', display: this.state.choiceDialog ? 'none': 'inline-block'}}>
           <Drawer
             docked={true}
-            width={290}
+            width={285}
             open={true} >
             {this.state.evtHtml}
-            <RaisedButton
-              label='Schedule A Meeting'
-              style={{
-                bottom: 25, position: 'relative', marginTop: '15px',
-                display: this.state.events ? 'inline-block' : 'none'
-              }}
-              fullWidth={true}
-              labelPosition='after'
-              icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
-              primary={true}
-              onClick={this.scheduleEvent} />
+            <div style={{ display: this.state.events ? 'inline-block': 'none' }}>
+              <RaisedButton
+                label='Schedule A Meeting'
+                style={{
+                  bottom: 10, position: 'relative', marginTop: '15px'
+                }}
+                fullWidth={true}
+                labelPosition='after'
+                icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
+                primary={true}
+                onClick={this.scheduleEvent} />
+              <WebExMeetNowDialog 
+                api={this.api}
+                webex={this.state.webex}/>
+            </div>
           </Drawer>
         </div>
         <Paper style={{
-          left: 175, position: 'fixed', top: 0, height: 'auto',
+          left: 300, position: 'fixed', top: 0, height: 'auto',
           display: this.state.newMeeting.newEvent ? 'inline-block' : 'none',
           width: 650
         }} zDepth={2} >
@@ -479,8 +503,7 @@ export class App extends Component<App.Props, App.State> {
           authResult={this.state.webExAuthResult}
           close={this.closeWebExSettings}
           onWebExChange={this.handleWebExInputs}
-          webExSettingsEditor={this.state.webExSettingsEditor}
-          meetNow={this.createWebExMeeting} />
+          webExSettingsEditor={this.state.webExSettingsEditor} />
       </div>
     );
   }
