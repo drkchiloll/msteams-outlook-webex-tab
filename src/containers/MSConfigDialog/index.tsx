@@ -1,7 +1,6 @@
 import * as React from 'react';
 import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
-import { microsoftTeams } from '../../microsoftTeams';
 import { Properties } from '../../properties';
 let {AzureApp: {contentUrl, websiteUrl}} = Properties;
 
@@ -28,19 +27,13 @@ export class ConfigDialog extends React.Component<any, any> {
           contentUrl,
           suggestedDisplayName: this.state.tabName,
           websiteUrl,
-          entityId: 'wwtatc-webexintegration'
+          entityId: 'webex-scheduler'
         });
         saveEvent.notifySuccess();
       });
 
     // Automatically set the save state to success
     microsoftTeams.settings.setValidityState(true);
-  }
-
-  componentDidMount() {
-    setTimeout(() => {
-      $('.tab').focus();
-    }, 250)
   }
 
   @autobind
