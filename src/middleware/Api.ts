@@ -2,6 +2,12 @@ import * as $ from 'jquery';
 import * as Promise from 'bluebird';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
+import { Properties } from '../properties';
+const {
+  AzureApp: {
+    clientId, contentUrl, teamsUrl
+  }
+} = Properties;
 
 export interface WebExAuth {
   webExId: string;
@@ -16,7 +22,6 @@ export interface WebExCreateMeetingParams {
   duration: number,
   timeZone: string;
 }
-
 
 export interface WebExMeetingRequest {
   webex: WebExAuth;
@@ -33,12 +38,14 @@ export interface WebExMeetingResponse {
   meetingKey: string;
 }
 
-export interface WebExJoinUrl {
+export interface WebExJoinUrlParameters {
   host: boolean;
   meetingKey: string;
   meetingPassword?: string;
   attendee?: {displayName, mail};
 }
+
+microsoftTeams.initialize();
 
 export class Api {
   private headers: any = {'Content-Type': 'application/json'};
@@ -46,6 +53,7 @@ export class Api {
   token: string;
   signedInUser: string;
   signedInUserEmail: string;
+  channelId: string;
   webex: WebExAuth;
   teamGroupId: string;
   constructor() {}
@@ -63,9 +71,12 @@ export class Api {
       this.webex = { webExId: '', webExPassword: '' }
     }
     try {
-      let { upn, groupId } = JSON.parse(localStorage.getItem('msTeamsContext'));
+      let {
+        upn, groupId, channelId, entityId, subEntityId
+      } = JSON.parse(localStorage.getItem('msTeamsContext'));
       this.signedInUserEmail = upn;
       this.teamGroupId = groupId;
+      this.channelId = channelId;
     } catch(e) {
       this.signedInUserEmail = null;
       this.teamGroupId = null;
@@ -193,7 +204,7 @@ export class Api {
     ));
   }
 
-  webExGetJoinUrl(params:WebExJoinUrl) {
+  webExGetJoinUrl(params:WebExJoinUrlParameters) {
     let path: string, body: any;
     const webex = { ...this.webex }
     if(params.host) {
@@ -274,15 +285,30 @@ export class Api {
     ))
   }
 
-  msteamsDialogBuilder(actionCards, organizer) {
+  /* subEntityId?
+    "[{"email":"email","joinUrl":"url"}]"
+  */
+  msteamsComposeDeepLink(subEntityId) {
+    let deepLinkUrl = teamsUrl + '/l/entity/';
+    let deepLinkParameters = `${clientId}/webex-scheduler?` +
+      `webUrl=${contentUrl}/webex-joiner&label=Join WebEx&` +
+      `context={"subEntityId":${JSON.stringify(subEntityId)},"canvasUrl":` +
+      `"${contentUrl}","channelId":"${this.channelId}"}`;
+    return deepLinkUrl + encodeURI(deepLinkParameters);
+  }
+
+  msteamsDialogBuilder(subEntityId, organizer) {
+    let actionCards = [{
+      '@type': 'OpenUri',
+      name: 'Join the Conference',
+      targets: [{ os: 'default', uri: this.msteamsComposeDeepLink(subEntityId)}]
+    }]
     return this._request(this.options(
       `/api/msteams-dialoghandler`,
       'post',
       JSON.stringify({ actionCards, organizer })
     ))
   }
-
-  msteamsOutlookTimeFinder({ token, user}) {}
 
   msteamsGetOutlookEvents({ token }) {
     let timezone = momenttz.tz.guess();
@@ -314,7 +340,6 @@ export class Api {
       return Promise.map(events[key], (evt:any, i: any) => {
         if(!evt.webExMeetingKey) return;
         return this.webExGetJoinUrl({
-          webex: { ...this.webex },
           meetingKey: evt.webExMeetingKey,
           host: evt.isOrganizer,
           attendee: { displayName: this.signedInUser, mail: this.signedInUserEmail },
@@ -341,4 +366,6 @@ export class Api {
       JSON.stringify(this._constructWebHookBody)
     ))
   }
+
+  msteamsOutlookTimeFinder({ token, user }) {}
 }
