@@ -1,32 +1,35 @@
 {
-  "manifestVersion": "0.4",
-  "appId": "3d73a702-0613-4eb4-85d8-de87f12cb1b5",
+  "$schema": "https://statics.teams.microsoft.com/sdk/v1.2/manifest/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.2",
+  "version": "1.0.0",
+  "id": "3d73a702-0613-4eb4-85d8-de87f12cb1b5",
+  "packageName": "msteams.webex.ngrok.io",
   "developer": {
-    "name": "WWTBD - ",
-    "websiteUrl": "https://msteams-webex.ngrok.io/",
+    "name": "Sam Womack",
+    "websiteUrl": "https://msteams-webex.ngrok.io/teams-webex",
     "termsOfUseUrl": "https://msteams-webex.ngrok.io/tou.html",        
     "privacyUrl": "https://msteams-webex.ngrok.io/privacy.html"
   },
-  "version": "0.3",
-  "validDomains": ["o365.wwtatc.com"],
-    "tabs": [
-      {
-        "id": "57aa06ad-2425-4245-b898-b16216822a57",
-        "name": "WebEx_Calendar",
-        "description": {
-          "short": "WebEx + Outlook Calendar",
-          "full": "Check Calendar with WebEx Meetings"
-        },
-        "icons": {
-          "44": "webex_44.png",
-          "88": "webex_88.png"
-        },
-        "accentColor": "#223344",
-        "configUrl": "https://msteams-webex.ngrok.io/config",
-        "canUpdateConfig": true
-      }
-    ],
-  "signInUrl": "https://msteams-webex.ngrok.io/auth",
+  "name": {
+    "short": "WebEx Teams Integration"
+  },
+  "description": {
+    "short": "WebEx + Outlook Calendar",
+    "full": "Check Calendar with WebEx Meetings"
+  },
+  "icons": {
+    "outline": "webex_44.png",
+    "color": "webex_88.png"
+  },
+  "accentColor": "#223344",
+  "validDomains": ["o365.wwtatc.com", "msteams-webex.ngrok.io"],
+  "configurableTabs": [{
+    "configurationUrl": "https://msteams-webex.ngrok.io/config",
+    "canUpdateConfiguration": true,
+    "scopes": ["team"]
+  }],
   "bots": [],
-  "needsIdentity": false
+  "composeExtensions": [],
+  "connectors": [],
+  "permissions": ["identity", "messageTeamMembers"]
 }
