@@ -75,7 +75,12 @@ export class WebExSettings extends React.Component<any,any> {
             <i className='mdi mdi-account-settings-variant mdi-18px'
                style={{ color: 'rgb(55,103,52)' }} />
           }
-          style={{float: 'right', color: 'rgb(55,103,52)' }}
+          style={{
+            position: 'absolute',
+            top:0,
+            right:0,
+            color: 'rgb(55,103,52)'
+          }}
           onClick={this.props.open} />
         <Drawer
           open={webExSettingsEditor}
@@ -93,8 +98,9 @@ export class WebExSettings extends React.Component<any,any> {
               </Col>
             </Row>
             <Row>
-              <Col xs={12}>
+              <Col xs={10}>
                 <TextField
+                  fullWidth={true}
                   value={webex.webExId}
                   autoFocus
                   hintText='WebEx ID'
@@ -131,18 +137,18 @@ export class WebExSettings extends React.Component<any,any> {
               </Col>
             </Row>
             <Row>
-              <Col xs={5}>
+              <Col sm={5}>
                 <FlatButton
                   fullWidth={true}
-                  style={{ marginTop: '25px' }}
+                  style={{ marginTop: '25px', marginLeft: '5px' }}
                   label='Cancel'
                   hoverColor='#FFCDD2'
                   onClick={this.props.close} />
               </Col>
-              <Col xs={6}>
+              <Col sm={5}>
                 <FlatButton
                   fullWidth={true}
-                  style={{ marginTop: '25px' }}
+                  style={{ marginTop: '25px', marginLeft: '5px' }}
                   backgroundColor={this.state.backGroundColor}
                   icon={
                     <i className='mdi mdi-refresh mdi-spin mdi-24px' 
