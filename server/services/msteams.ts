@@ -22,12 +22,11 @@ export function MsTeamsServiceFactory(graph: MsGraph): MSTeamsService {
       title: `${organizer.displayName} has started a New Cisco WebEx Conference`,
       sections: [{
         images: [{image: 'https://msteams-webex.ngrok.io/webex.jpg', text: 'alt text'}],
-        text: 'Click on the button that corresponds with your name to automatically '+
-          'launch Cisco WebEx in your browser'
+        text: 'To Automatically Join the Web Conference already in progress click on the Join Button.'
       }],
       potentialAction: actions
     };
-    console.log(card);
+    // console.log(card);
     return graph.connectorRequest(card);
   };
 
