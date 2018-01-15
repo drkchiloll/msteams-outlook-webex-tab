@@ -15,7 +15,7 @@ router.use((req, res, next) => {
 router.get('/webex.jpg', (req,res) => {
   res.sendFile(path.join(__dirname, '../../public/webex.jpg'));
 });
-router.route('/')
+router.route('/teams-webex')
   .get((req, res) =>
     res.sendFile(path.join(__dirname, '../../public/index.html'))
   );
@@ -32,3 +32,7 @@ router.get('/bundle.js', (req, res) =>
   res.sendFile(path.join(__dirname, '../../public/bundle.js')))
 router.get('/styles.css', (req, res) =>
   res.sendFile(path.join(__dirname, '../../public/styles.css')))
+
+router.get('/join-webex', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../public/index.html'))
+});
