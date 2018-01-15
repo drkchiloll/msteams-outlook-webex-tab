@@ -3,9 +3,6 @@ import * as ReactDOM from 'react-dom';
 import { Router, Route, Switch } from 'react-router';
 import { createBrowserHistory } from 'history';
 
-// import './materialdesignicons.css';
-// import '../node_modules/font-awesome/css/font-awesome.min.css';
-
 import {
   MuiThemeProvider,
   getMuiTheme,
@@ -38,7 +35,7 @@ const muiTheme = getMuiTheme({
   fontFamily: `'Times New Roman'`
 });
 
-import { App, AuthDialog, ConfigDialog } from './containers';
+import { App, AuthDialog, ConfigDialog, JoinWebEx } from './containers';
 
 const history = createBrowserHistory();
 
@@ -46,9 +43,10 @@ ReactDOM.render(
   <MuiThemeProvider muiTheme={muiTheme}>
     <Router history={history}>
       <Switch>
-        <Route exact path="/" component={ App } />
+        <Route exact path="/teams-webex" component={ App } />
         <Route path="/config" component={ ConfigDialog } />
         <Route path="/auth" component={ AuthDialog } />
+        <Route path='/join-webex' component={JoinWebEx} />
       </Switch>
     </Router>
   </MuiThemeProvider>,
