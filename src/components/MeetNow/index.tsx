@@ -11,15 +11,26 @@ import {
 
 import { Participant } from '../Participant';
 
-import { Api } from '../../middleware'
+import { Api } from '../../middleware';
+
+const initialState = {
+  dialogOpen: false,
+  cards: [],
+  members: null,
+  agenda: '',
+  launchBtn: 'LAUNCH'
+};
 
 export class WebExMeetNowDialog extends React.Component<any,any> {
-  state = {
-    dialogOpen: false,
-    cards: [],
-    members: null,
-    agenda: '',
-    launchBtn: 'LAUNCH'
+  constructor(props) {
+    super(props);
+    this.state = {
+      dialogOpen: false,
+      cards: [],
+      members: null,
+      agenda: '',
+      launchBtn: 'LAUNCH'
+    };
   }
 
   @autobind
@@ -27,13 +38,6 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
     let { cards, members } = this.state;
     cards.splice(cardIndex, 1);
     this.setState({ cards });
-  }
-
-  componentWillReceiveProps(props) {
-    this.props.api.msteamsMembers().then((members: any) => {
-      this.setState({ members })
-      this._renderCards(JSON.parse(JSON.stringify(members)));
-    })
   }
 
   @autobind
@@ -77,52 +81,60 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
         return api.webExGetJoinUrl({
           host: true,
           meetingKey: key
-        })
-      }).then(({ joinUrl }) => {
+        });
+      })
+      .then(({ joinUrl }) => {
         hostJoinUrl = joinUrl;
         let { attendees } = webExMeeting.meeting;
-        return Promise.map(attendees, ({ displayName, mail }) => {
-          return api.webExGetJoinUrl({
+        return Promise.map(attendees, ({ displayName, mail }) =>
+          api.webExGetJoinUrl({
             host: false,
             meetingKey: key,
             attendee: { displayName, mail }
-          }).then(({ joinUrl }) => {
-            return {
-              '@type': 'OpenUri',
-              name: displayName,
-              targets: [{ os: 'default', uri: joinUrl }]
-            };
-          });
-        }).then((actionCards) => {
-          return api.msteamsDialogBuilder(actionCards, organizer);
+          }).then(({ joinUrl }) =>({ mail, joinUrl }))
+        ).then((subEntityId) =>
+          api.msteamsDialogBuilder(subEntityId, organizer)
+        ).then(() => {
+          this.resetState();
+          window.open(hostJoinUrl, '_newtab');
         });
-      }).then(() => {
-        this.setState({ cards: [], members: null, launchBtn: 'LAUNCH' });
-        this.setState({ dialogOpen: false });
-        window.open(hostJoinUrl, '_newtab');
       });
   }
 
+  @autobind
+  resetState() {
+    this.setState(initialState);
+  }
+
   render() {
-    let { api } = this.props;
+    let api: Api = this.props.api;
+    let {webex} = this.props;
     return (
       <div>
         <FlatButton
           fullWidth={true}
           style={{ width: 285}}
-          disabled={!api.webex.webExId || !api.webex.webExPassword}
+          disabled={!webex.webExId || !webex.webExPassword}
           backgroundColor='white'
           label={
-            <span className='mdi mdi-cisco-webex mdi-24px'
+            <span className='mdi mdi-cisco-webex mdi-18px'
               style={{ color: 'rgb(96,146,67)', fontSize: '1.1em' }} >
-              &nbsp;&nbsp;Meet Now&nbsp;&nbsp;
-              <span className='mdi mdi-cisco-webex mdi-24px' />
+              &nbsp;
+              "Instant" Meeting
             </span>
           }
-          onClick={() => this.setState({ dialogOpen: true })} />
+          onClick={() => {
+            this.setState({ dialogOpen: true });
+            this.props.api.msteamsMembers().then((members: any) => {
+              this.setState({ members })
+              this._renderCards(JSON.parse(JSON.stringify(members)));
+            })
+          }} />
         <Dialog title='Cisco WebEx "Instant" Meeting'
           actions={[
-            <FlatButton label='Cancel' primary={true} onClick={() => this.setState({ dialogOpen: false })} />,
+            <FlatButton label='Cancel' primary={true} onClick={() => {
+              this.resetState();
+            }} />,
             <FlatButton
               label={
                 this.state.launchBtn ||
