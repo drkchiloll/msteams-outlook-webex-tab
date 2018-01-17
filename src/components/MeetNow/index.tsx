@@ -6,19 +6,22 @@ import { Grid, Row, Col } from 'react-flexbox-grid';
 import autobind from 'autobind-decorator';
 import {
   Dialog, FlatButton, FontIcon, TextField,
-  CircularProgress, RaisedButton
+  CircularProgress, RaisedButton, Subheader,
+  List, Menu
 } from 'material-ui';
 
 import { Participant } from '../Participant';
+import { UserSearch } from '../UserSearch';
 
 import { Api } from '../../middleware';
 
 const initialState = {
   dialogOpen: false,
-  cards: [],
   members: null,
   agenda: '',
-  launchBtn: 'LAUNCH'
+  launchBtn: 'LAUNCH',
+  attendees: [],
+  organizer: {}
 };
 
 export class WebExMeetNowDialog extends React.Component<any,any> {
@@ -26,79 +29,66 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
     super(props);
     this.state = {
       dialogOpen: false,
-      cards: [],
       members: null,
       agenda: '',
-      launchBtn: 'LAUNCH'
+      launchBtn: 'LAUNCH',
+      attendees: [],
+      organizer: {}
     };
   }
 
   @autobind
-  removeParticipant(cardIndex) {
-    let { cards, members } = this.state;
-    cards.splice(cardIndex, 1);
-    this.setState({ cards });
-  }
-
-  @autobind
-  _renderCards(members) {
-    let cards = members
-      .map((member, i) => (
-        <Participant user={member} index={i} remove={this.removeParticipant} />
-      ))
-    this.setState({ cards });
+  removeParticipant(attendeeId) {
+    let { attendees } = this.state;
+    let idx = attendees.findIndex(attendee => 
+      attendee.id === attendeeId);
+    attendees.splice(idx, 1);
+    this.setState({ attendees });
   }
 
   @autobind
   launchMeeting() {
-    const api: Api = this.props.api;
     this.setState({ launchBtn: '' });
-    let { members } = this.state;
-    const webex = { ...api.webex };
-    let organizer = members.find((mem) => mem.me);
-    delete organizer.photo;
-
-    let webExMeeting = api.webExGenerateMeetingRequest({
-      subject: 'Microsoft Teams Web Conference',
-      attendees: (() => {
-        return members.reduce((a, member) => {
-          if(member.me) return a;
-          else {
-            a.push({ id: member.id, displayName: member.displayName, mail: member.mail });
-            return a;
-          }
-        }, [])
-      })(),
-      startDate: new Date(),
-      duration: null,
-    });
-    let key: string, hostJoinUrl;
+    const api: Api = this.props.api;
+    let key: string, hostJoinUrl: string;
     return api
-      .webExCreateMeeting(webExMeeting)
+      .webExLaunchPersonalRoom()
       .then(({meetingKey}) => {
         key = meetingKey;
-        // Get Host JoinURL
-        return api.webExGetJoinUrl({
-          host: true,
-          meetingKey: key
-        });
+        return api.webExGetJoinUrl({host: true, meetingKey: key });
       })
-      .then(({ joinUrl }) => {
+      .then(({joinUrl}) => {
         hostJoinUrl = joinUrl;
-        let { attendees } = webExMeeting.meeting;
-        return Promise.map(attendees, ({ displayName, mail }) =>
-          api.webExGetJoinUrl({
+        return;
+      })
+      .then(() => {
+        let { attendees, organizer } = this.state;
+        delete organizer.photo;
+        return Promise.map(attendees, ({displayName, mail}) => {
+          return api.webExGetJoinUrl({
             host: false,
             meetingKey: key,
-            attendee: { displayName, mail }
-          }).then(({ joinUrl }) =>({ mail, joinUrl }))
-        ).then((subEntityId) =>
-          api.msteamsDialogBuilder(subEntityId, organizer)
-        ).then(() => {
-          this.resetState();
-          window.open(hostJoinUrl, '_newtab');
-        });
-      });
+            attendee: { displayName, mail}
+          }).then(({joinUrl}) => ({mail, joinUrl}))
+        }).then(subEntityId => 
+          api.msteamsDialogBuilder(subEntityId, organizer))
+      }).then(() => {
+        this.resetState();
+        window.open(hostJoinUrl, '_newTab');
+      })
+  }
+
+  @autobind
+  getTeam() {
+    this.setState({ dialogOpen: true });
+    this.props.api.msteamsMembers().then((members: any) => {
+      let organizer = members.find(member => member.me);
+      members.splice(
+        members.findIndex(mem => mem.me), 1
+      );
+      const attendees = members;
+      this.setState({ organizer, members, attendees });
+    });
   }
 
   @autobind
@@ -109,28 +99,29 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
   render() {
     let api: Api = this.props.api;
     let {webex} = this.props;
+    const { attendees, organizer } = this.state;
+    // The Other Way Mutates ways in which ATTENDEES are modified to
+    // React DOM Elements
+    const admin = <Participant user={JSON.parse(JSON.stringify(organizer))} />;
+    // const participants = JSON.parse(JSON.stringify(attendees)).map((attendee) =>
+    //   <Participant user={attendee} key={attendee.id}
+    //     remove={this.removeParticipant} />)
     return (
       <div>
-        <FlatButton
+        <RaisedButton
           fullWidth={true}
           style={{ width: 285}}
           disabled={!webex.webExId || !webex.webExPassword}
-          backgroundColor='white'
-          label={
-            <span className='mdi mdi-cisco-webex mdi-18px'
-              style={{ color: 'rgb(96,146,67)', fontSize: '1.1em' }} >
-              &nbsp;
-              "Instant" Meeting
-            </span>
-          }
-          onClick={() => {
-            this.setState({ dialogOpen: true });
-            this.props.api.msteamsMembers().then((members: any) => {
-              this.setState({ members })
-              this._renderCards(JSON.parse(JSON.stringify(members)));
-            })
-          }} />
-        <Dialog title='Cisco WebEx "Instant" Meeting'
+          backgroundColor='rgb(95,166,80)'
+          labelColor='black'
+          label='START MEETING'
+          labelPosition='after'
+          icon={<i className='mdi mdi-cisco-webex mdi-18px'
+            style={{
+              color: 'black',
+              fontSize: '1.1em' }} />}
+          onClick={this.getTeam} />
+        <Dialog title='Cisco WebEx Instant Meeting'
           actions={[
             <FlatButton label='Cancel' primary={true} onClick={() => {
               this.resetState();
@@ -146,10 +137,14 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
           ]}
           modal={false}
           open={this.state.dialogOpen}
-          style={{position: 'fixed', height: 'auto', width: 1250}} >
+          style={{
+            position: 'relative',
+            height: 'auto', maxWidth: 'none', width: '100%'
+          }}
+          autoScrollBodyContent={true} >
           <Grid>
             <Row>
-              <Col sm={6}>
+              <Col sm={5}>
                 <TextField
                   value={this.state.agenda}
                   floatingLabelText='Meeting Agenda'
@@ -163,16 +158,32 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
                   }}
                   rows={3} />
               </Col>
-            </Row>
-            <Row>
-              <Col sm={12}>
-                <div style={{display: this.state.members ? 'none': 'inline-block', marginTop: '20px'}}>
-                  <CircularProgress size={20} thickness={3} />
+              <Col sm={7}>
+                <div style={{ marginLeft: '75px' }}>
+                  <Subheader> Organizer </Subheader>
+                  {admin}
+                  <Menu maxHeight={400} >
+                    <Subheader> Participants </Subheader>
+                    { attendees.length===0 ? <div></div> :
+                      JSON.parse(JSON.stringify(attendees)).map((att:any) =>
+                        <Participant user={att} key={att.id} remove={this.removeParticipant} />)}
+                  </Menu>
                 </div>
               </Col>
             </Row>
             <Row>
-              {this.state.cards}
+              <Col sm={12}>
+                <div style={{
+                    position: 'absolute',
+                    top: 215,
+                    width: '37%',
+                    // display: this.state.members ? 'none': 'inline-block',
+                    marginTop: 0
+                  }}>
+                  {/* <CircularProgress size={20} thickness={3} /> */}
+                  <UserSearch />
+                </div>
+              </Col>
             </Row>
           </Grid>
         </Dialog>
