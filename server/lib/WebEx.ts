@@ -6,6 +6,16 @@ import {
   userServFactory, meetingsServFactory
 } from '../services';
 
+import axios from 'axios';
+import { stringify } from 'querystring'
+import axiosCookieJarSupport from '@3846masa/axios-cookiejar-support';
+import * as tough from 'tough-cookie';
+axiosCookieJarSupport(axios);
+
+import {
+  MeetingService
+} from '../models/WebEx';
+
 const { Builder, parseString } = xml2js,
       xmlBuilder = new Builder({headless: true}),
       { webex: {
@@ -33,7 +43,7 @@ export interface MeetingServiceFactory {
 export class WebEx {
   securityContext: Credentials;
   userService: UserServiceFactory;
-  meetingsService: MeetingServiceFactory;
+  meetingsService: MeetingService;
   constructor({webExID, password}: any) {
     this.securityContext = {
       securityContext: { webExID, password, siteName }
@@ -41,6 +51,22 @@ export class WebEx {
     this.userService = userServFactory(this);
     this.meetingsService = meetingsServFactory(this);
   };
+
+  instantRequest(params:any) {
+    let { loginUrl, meetingUrl, loginBody, meetingBody } = params;
+    const cookieJar = new tough.CookieJar();
+    axios.defaults.jar = cookieJar;
+    axios.defaults.withCredentials = true;
+    return axios.post(loginUrl, stringify(loginBody))
+      .then((resp) => {
+        const meetingForm = Object.keys(meetingBody).map(key =>
+         `${encodeURI(key)}=${encodeURIComponent(meetingBody[key])}`).join('&');
+        let meetUrl = meetingUrl + meetingForm;
+        return axios.get(meetingUrl + meetingForm)
+      }).then((resp) => {
+        return { meetingKey: resp.data.match(/SUCCESS\\x26MK\\x3d(.\d+)\\x/)[1] };
+      })
+  }
 
   js2xml(o: Object) {
     return Promise.resolve((xmlBuilder.buildObject(o)));
@@ -66,8 +92,6 @@ export class WebEx {
         strictSSL: false,
         body: options.body
       }, (err: any, resp: any, body: any) => {
-        // console.log(err);
-        // console.log(body);
         resolve(body)
       });
     });
