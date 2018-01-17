@@ -113,13 +113,13 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
           fullWidth={true}
           style={{ width: 285}}
           disabled={!webex.webExId || !webex.webExPassword}
-          backgroundColor='rgb(95,166,80)'
-          labelColor='black'
-          label='START MEETING'
+          primary={true}
+          labelColor='white'
+          label='MEET NOW'
           labelPosition='after'
           icon={<i className='mdi mdi-cisco-webex mdi-18px'
             style={{
-              color: 'black',
+              color: 'white',
               fontSize: '1.1em' }} />}
           onClick={this.getTeam} />
         <Dialog title='Cisco WebEx Instant Meeting'
