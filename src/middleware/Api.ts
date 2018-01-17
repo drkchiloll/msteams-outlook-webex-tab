@@ -2,7 +2,19 @@ import * as $ from 'jquery';
 import * as Promise from 'bluebird';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
+import { EventEmitter } from 'events';
 import { Properties } from '../properties';
+
+import axios from 'axios';
+
+import {
+  AxiosResponse, AxiosRequestConfig
+} from 'axios';
+
+const apiEmitter = new EventEmitter();
+
+export { apiEmitter };
+
 const {
   AzureApp: {
     clientId, contentUrl, teamsUrl
@@ -43,6 +55,7 @@ export interface WebExJoinUrlParameters {
   meetingKey: string;
   meetingPassword?: string;
   attendee?: {displayName, mail};
+  meetingType?: string;
 }
 
 microsoftTeams.initialize();
@@ -110,6 +123,23 @@ export class Api {
 
   private _request(options) {
     return $.ajax(options);
+  }
+
+  private _axiosoptions(opts:any): AxiosRequestConfig {
+    let options: AxiosRequestConfig = {
+      url: opts.path,
+      method: opts.method,
+      headers: this.headers
+    };
+    if(opts.data) options['data'] = opts.data;
+    if(opts.params) options['params'] = opts.params;
+    return options;
+  }
+
+  private _axiosrequest(params) {
+    return axios(
+      this._axiosoptions(params)
+    ).then((resp: AxiosResponse<any>) => resp.data);
   }
 
   private _formatTime(date: string, time:string) {
@@ -216,9 +246,11 @@ export class Api {
       path = `/api/webex-joinurl`;
       body = {
         meetingKey: params.meetingKey,
-        meetingPassword: 'pass123',
         attendee: params.attendee
       };
+      if(!params.meetingType) {
+        body['meetingPassword'] = 'pass123';
+      }
     }
     body['webex'] = webex;
     return this._request(this.options(
@@ -227,11 +259,11 @@ export class Api {
   }
 
   msteamsGetMe() {
-    return this._request(this.options(
-      `/api/me`,
-      'get',
-      { token: this.token }
-    ));
+    return this._axiosrequest({
+      path: '/api/me',
+      method: 'get',
+      params: {token: this.token}
+    });
   }
 
   msteamsGetPhoto(id) {
@@ -255,25 +287,32 @@ export class Api {
         'get',
         { token: this.token, groupId: this.teamGroupId }
       )
-    ).then(({ value }) => {
-      return Promise.map(value, (u:any) => {
-        let user: any = {
-          id: u.id,
-          displayName: u.displayName,
-          mail: u.mail,
-          removed: false
-        };
-        if(user.displayName === this.signedInUser) user.me = true;
-        else user.me = false;
-        return this.msteamsGetPhoto(user.id).then((photo) => {
-          user.photo = photo;
-          return user;
+    ).then(({ value, status }) => {
+      if(status && status === 401) { // EventEmitter ?
+        apiEmitter.emit('401');
+        apiEmitter.on('authenticated', () => {
+          return this.msteamsMembers();
         });
-      }).then((users:any) => {
-        return users.sort(function(a, b) {
-          return (a.me === b.me) ? -1 : a ? 1 : -1;
-        })
-      });
+      } else {
+        return Promise.map(value, (u: any) => {
+          let user: any = {
+            id: u.id,
+            displayName: u.displayName,
+            mail: u.mail,
+            removed: false
+          };
+          if(user.displayName === this.signedInUser) user.me = true;
+          else user.me = false;
+          return this.msteamsGetPhoto(user.id).then((photo) => {
+            user.photo = photo;
+            return user;
+          });
+        }).then((users: any) => {
+          return users.sort(function (a, b) {
+            return (a.me === b.me) ? -1 : a ? 1 : -1;
+          })
+        });
+      }
     });
   }
 
@@ -368,4 +407,15 @@ export class Api {
   }
 
   msteamsOutlookTimeFinder({ token, user }) {}
+
+  webExLaunchPersonalRoom() {
+    return this._axiosrequest({
+      path: '/api/webex-meetnow',
+      method: 'post',
+      data: {
+        webex: {...this.webex},
+        meeting: { agenda: 'the agenda'}
+      }
+    });
+  }
 }
