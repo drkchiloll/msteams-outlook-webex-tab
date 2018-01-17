@@ -18,7 +18,8 @@ export class JoinWebEx extends React.Component<any,any> {
         // On the Join Conference Meeting
         const entities: any = subEntityId;
         if(entities.find(entity => entity.mail == upn)) {
-          window.open(entities.find(entity => entity.mail == upn).joinUrl, '_newTab');
+          let joinUrl = decodeURIComponent(entities.find(entity => entity.mail == upn).joinUrl)
+          window.open(joinUrl, '_newTab');
         }
       }
     });
