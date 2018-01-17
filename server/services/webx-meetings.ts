@@ -96,6 +96,21 @@ export function meetingsServFactory(webex: WebEx) {
     });
   };
 
+  service.createInstantly = function({webExId='', webExPassword='', agenda=''}) {
+    // Login URL
+    const baseUrl = 'https://wwtatc.webex.com/wwtatc';
+    let loginUrl =  `${baseUrl}/p.php?`,
+        meetingUrl = `${baseUrl}/m.php?`,
+        loginBody = {
+          AT: 'LI', WID: webExId, PW: encodeURI(webExPassword),
+          MU: 'GoBack', BU: encodeURIComponent(baseUrl)
+        },
+        meetingBody = {
+          AT: 'IM', AG: agenda, PW: 'pass123', BU: baseUrl
+        };
+    return webex.instantRequest({ loginUrl, meetingUrl, loginBody, meetingBody })
+  };
+
   service.joinUrls = function({ meetingKey, meetingPassword, attendee }) {
     const xsiType = `${xsitype}.meeting.GetjoinurlMeeting`;
     const content = {
@@ -129,7 +144,7 @@ export function meetingsServFactory(webex: WebEx) {
     }).then((xml:string) => {
       return webex.genXml(xml);
     }).then((xml:string) => {
-      console.log(xml);
+      // console.log(xml);
       return webex._request({ body: xml});
     }).then((resp: any) => {
       let xml = resp;

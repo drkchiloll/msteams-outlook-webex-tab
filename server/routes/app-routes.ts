@@ -17,6 +17,8 @@ router.route('/webex-meetings')
   .get(webExController.getMeetings)
   .post(webExController.createMeeting)
 
+router.post('/webex-meetnow', webExController.meetNow);
+
 router.route('/webex-meeting/:meetingKey')
   .get(webExController.getMeeting)
 

@@ -53,6 +53,19 @@ export const webExController = (() => {
       })
   };
 
+  cntrler.meetNow = function(req: Request, res: Response) {
+    const { webex, meeting } = req.body;
+    const client: WebEx = cntrler.createInstance(webex);
+    return client
+      .meetingsService
+      .createInstantly({
+        webExId: webex.webExId,
+        webExPassword: webex.webExPassword,
+        agenda: meeting.agenda
+      })
+      .then((result) => res.send(result));
+  };
+
   cntrler.getJoinUrls = function(req: Request, res: Response) {
     const { webex, meetingKey, meetingPassword, attendee } = req.body;
     const client = cntrler.createInstance(webex);
