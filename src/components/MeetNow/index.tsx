@@ -55,7 +55,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
       .webExLaunchPersonalRoom()
       .then(({meetingKey}) => {
         key = meetingKey;
-        return api.webExGetJoinUrl({host: true, meetingKey: key });
+        return api.webExGetJoinUrl({host: true, meetingKey: key});
       })
       .then(({joinUrl}) => {
         hostJoinUrl = joinUrl;
@@ -68,7 +68,8 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
           return api.webExGetJoinUrl({
             host: false,
             meetingKey: key,
-            attendee: { displayName, mail}
+            attendee: { displayName, mail},
+            meetingType: 'personal'
           }).then(({joinUrl}) => ({mail, joinUrl}))
         }).then(subEntityId => 
           api.msteamsDialogBuilder(subEntityId, organizer))
