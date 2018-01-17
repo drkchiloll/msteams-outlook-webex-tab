@@ -3,7 +3,6 @@ const { Component } = React;
 import * as Promise from 'bluebird';
 import * as style from './style.css';
 import { RouteComponentProps } from 'react-router';
-import { Link } from 'react-router-dom';
 import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
 import { UserAgentApplication } from 'msalx';
@@ -13,7 +12,7 @@ import { Properties } from '../../properties';
 import * as openSocket from 'socket.io-client';
 
 import {
-  Api, WebExAuth
+  Api, WebExAuth, apiEmitter
 } from '../../middleware';
 
 const {
@@ -71,7 +70,7 @@ export class App extends Component<App.Props, App.State> {
     }, { redirectUri }
   )
 
-  callTeams = function() {
+  callTeams = function(fromEmitter?) {
     microsoftTeams.authentication.authenticate({
       url: '/auth',
       width: 575,
@@ -80,7 +79,7 @@ export class App extends Component<App.Props, App.State> {
         let {
           accessToken, signedInUser, context
         } = JSON.parse(result);
-        this.authActions({ accessToken, signedInUser, context });
+        this.authActions({ accessToken, signedInUser, context, fromEmitter });
         // let subscriptionId = localStorage.getItem('subscriptionId');
         this.setState({ accessToken });
         if(this.state.webex.webExId) {
@@ -184,6 +183,9 @@ export class App extends Component<App.Props, App.State> {
       });
     });
     microsoftTeams.initialize();
+    apiEmitter.on('401', () => {
+      this.callTeams(true);
+    });
   }
 
   componentWillMount() {
@@ -240,12 +242,13 @@ export class App extends Component<App.Props, App.State> {
   }
 
   @autobind
-  authActions({ accessToken, signedInUser, context={} }) {
+  authActions({ accessToken, signedInUser, context={}, fromEmitter=false }) {
     this.api.setToken(accessToken);
     this.api.setUser(signedInUser);
     if(Object.keys(context).length > 0) {
       this.api.setTeamsContext(context);
     }
+    if(fromEmitter) apiEmitter.emit('authenticated');
   }
 
   @autobind
@@ -331,7 +334,7 @@ export class App extends Component<App.Props, App.State> {
               <RaisedButton
                 label='Schedule A Meeting'
                 style={{
-                  bottom: 10, position: 'relative', marginTop: '15px'
+                  bottom: 2, position: 'relative', marginTop: '15px'
                 }}
                 fullWidth={true}
                 labelPosition='after'
@@ -495,6 +498,7 @@ export class App extends Component<App.Props, App.State> {
             </Row>
           </Grid>
         </Paper>
+
         <WebExSettings
           api={this.api}
           webex={this.state.webex}
