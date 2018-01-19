@@ -55,15 +55,15 @@ export class EventDates extends React.Component<any, any> {
   @autobind
   durationChangeHandler(e:any, index: number, value: string) {
     let { startTime } = this.props,
-        dateFormat = 'YYYY-DD-MM',
-        startDate = moment().format(dateFormat),
-        formattedDate = this.formatTime(startDate, startTime);
+        dateFormat = 'YYYY-MM-DD',
+        startDate = moment().format(dateFormat);
+    const formattedDate = moment(this.formatTime(startDate, startTime));
     this.durationValue = value;
     if(value === '1 hour') value = '1 hours';
     if(value === '1.5 hours') value = '90 minutes';
     let duration: any = parseInt(value.split(' ')[0], 10),
-        ordinal: any = value.split(' ')[1],
-        timeDuration = moment(formattedDate).add(duration, ordinal).format('h:mm a');
+        ordinal: any = value.split(' ')[1];
+    const timeDuration = formattedDate.add(duration, ordinal).format('h:mm a');
     this.props.inputChange('endTime', timeDuration);
   }
 
