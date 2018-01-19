@@ -5,9 +5,10 @@ import {
 } from 'msalx';
 
 // The Following File Needs to be Updated for your App
-import { Properties } from '../../properties';
+import * as Properties from '../../../properties.json';
+
 let {
-  AzureApp: {
+  msApp: {
     clientId, authority, scopes,
     webApi, tenant, redirectUri
   }

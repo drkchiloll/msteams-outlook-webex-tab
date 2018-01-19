@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import * as Promise from 'bluebird';
 import { Properties } from '../properties';
-const { WebEx: { user, password } } = Properties;
 import { WebEx } from '../lib/WebEx';
 
 export const webExController = (() => {

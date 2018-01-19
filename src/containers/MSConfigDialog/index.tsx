@@ -1,8 +1,9 @@
 import * as React from 'react';
 import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
-import { Properties } from '../../properties';
-let {AzureApp: {contentUrl, websiteUrl}} = Properties;
+
+import * as Properties from '../../../properties.json';
+let { msApp: { contentUrl, websiteUrl, entityId }} = Properties;
 
 import {
   TextField
@@ -18,7 +19,8 @@ export class ConfigDialog extends React.Component<any, any> {
     // Configure the save event
     this.state = {
       tabName: ''
-    }
+    };
+
     microsoftTeams
       .settings
       .registerOnSaveHandler((saveEvent) => {
@@ -27,7 +29,7 @@ export class ConfigDialog extends React.Component<any, any> {
           contentUrl,
           suggestedDisplayName: this.state.tabName,
           websiteUrl,
-          entityId: 'webex-scheduler'
+          entityId
         });
         saveEvent.notifySuccess();
       });
@@ -39,12 +41,6 @@ export class ConfigDialog extends React.Component<any, any> {
   @autobind
   tabChange(e:any, tabName:string) {
     this.setState({ tabName });
-  }
-
-  tabInput(input) {
-    if(input) {
-      setTimeout(() => { input.focus() }, 500);
-    }
   }
 
   render() {
@@ -62,7 +58,7 @@ export class ConfigDialog extends React.Component<any, any> {
                 hintText='Tab Name'
                 autoFocus
                 onChange={this.tabChange}
-                value={this.state.tabName} />            
+                value={this.state.tabName} />
             </Col>
           </Row>
         </Grid>

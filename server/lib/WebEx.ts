@@ -1,7 +1,7 @@
 import * as request from 'request';
 import * as Promise from 'bluebird';
 import * as xml2js from 'xml2js';
-import { properties } from '../services/properties';
+import {  properties as Properties } from '../services';
 import {
   userServFactory, meetingsServFactory
 } from '../services';
@@ -20,7 +20,7 @@ const { Builder, parseString } = xml2js,
       xmlBuilder = new Builder({headless: true}),
       { webex: {
         headers, uri, siteName, xsi, schema
-      } } = properties;
+      } } = Properties;
 
 export interface Credentials {
   securityContext: {
@@ -59,13 +59,16 @@ export class WebEx {
     axios.defaults.withCredentials = true;
     return axios.post(loginUrl, stringify(loginBody))
       .then((resp) => {
+        // console.log(resp.data);
         const meetingForm = Object.keys(meetingBody).map(key =>
          `${encodeURI(key)}=${encodeURIComponent(meetingBody[key])}`).join('&');
         let meetUrl = meetingUrl + meetingForm;
-        return axios.get(meetingUrl + meetingForm)
+        return axios.get(meetUrl)
       }).then((resp) => {
-        return { meetingKey: resp.data.match(/SUCCESS\\x26MK\\x3d(.\d+)\\x/)[1] };
-      })
+        let successFail = resp.data.match(/SUCCESS\\x26MK\\x3d(.\d+)\\x/);
+        if(!successFail) return null;
+        else return { meetingKey: successFail[1] };
+      });
   }
 
   js2xml(o: Object) {

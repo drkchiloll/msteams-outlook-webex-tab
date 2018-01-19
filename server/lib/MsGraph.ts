@@ -8,10 +8,10 @@ import {
 
 import { MSTeamsService } from '../models';
 
-import { Properties } from '../properties';
+import { properties as Properties } from '../services';
 
-const { MsGraph: {
-  uri, headers, connectorUrl
+const { msApp: {
+  uri, connectorUrl
 }} = Properties;
 
 export interface UserService {
@@ -27,8 +27,8 @@ export class MsGraph {
   msTeamsService: MSTeamsService;
   headers: any;
   constructor({ token }) {
-    headers['Authorization'] = `Bearer ${token}`;
-    this.headers = headers;
+    this.headers = {'Content-Type': 'application/json'}
+    this.headers['Authorization'] = `Bearer ${token}`;
     this.outlookService = outlookServFactory(this);
     this.userService = o365UserServFactory(this);
     this.msTeamsService = MsTeamsServiceFactory(this);
@@ -37,7 +37,7 @@ export class MsGraph {
   connectorRequest(card) {
     return new Promise((resolve, reject) => {
       request.post({
-        uri: connectorUrl, headers,
+        uri: connectorUrl, headers: this.headers,
         json: true, body: card
       }, (err, resp, body) => resolve(body));
     })

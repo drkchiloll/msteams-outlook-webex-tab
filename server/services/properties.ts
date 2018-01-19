@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 
 let propsFile = '/var/atc/ms-webx-api.json';
-let localPropsFile='../../properties.sample.json';
+let localPropsFile='../../properties.json';
 let props:any = null;
 
 if(fs.existsSync(propsFile))

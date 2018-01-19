@@ -8,18 +8,19 @@ import autobind from 'autobind-decorator';
 import { UserAgentApplication } from 'msalx';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
-import { Properties } from '../../properties';
 import * as openSocket from 'socket.io-client';
+import * as Properties from '../../../properties.json'
+
 
 import {
   Api, WebExAuth, apiEmitter
 } from '../../middleware';
 
 const {
-  AzureApp: {
+  msApp: {
     clientId, authority, scopes,
     webApi, tenant, redirectUri,
-    headers
+    headers, contentUrl
   }
 } = Properties;
 
@@ -200,6 +201,13 @@ export class App extends Component<App.Props, App.State> {
     // this.api.resetLocalStorage();
   }
 
+  componentDidMount() {
+    setTimeout(() => {
+      this.setState({ choiceDialog: false });
+      this.credCheck();
+    }, 4500)
+  }
+
   @autobind
   credCheck() {
     let { accessToken, webExSettingsEditor, webex } = this.state;
@@ -311,18 +319,22 @@ export class App extends Component<App.Props, App.State> {
             &nbsp;Welcome
           </span>}
           open={this.state.choiceDialog && !this.state.hasSubentityId}
-          actions={[
-            <FlatButton label='Join Meeting'
-              onClick={() => {window.location.pathname = '/join-webex' }} />,
-            <FlatButton label='Authorize Application' 
-              onClick={() => {
-                this.setState({ choiceDialog: false })
-                this.credCheck();
-              }} />
-          ]} >
+          // actions={[
+          //   <FlatButton label='Join Meeting'
+          //     onClick={() => {window.location.pathname = '/join-webex' }} />,
+          //   <FlatButton label='Authorize Application' 
+          //     onClick={() => {
+          //       this.setState({ choiceDialog: false })
+          //       this.credCheck();
+          //     }} />
+          // ]}
+           >
           <br/>
-          In Order to Schedule a Meeting, you will have to Authorize this application access to certain elements with
-          Office 365.
+          This application requires Authorization and Authentication to your Office 365 Organization
+          with certain permissions granted such as Reading User Data and the ability to Create Events in Outlook.
+          This action also enables the Application to get Team members and/or lookup and add other users within
+          your organization to a Meeting; If you have previously Authenticated and your Credentials haven't expired
+          you will not be required to Authenticate again until such time your access token expires.
         </Dialog>
         <div style={{fontSize: '90%', display: this.state.choiceDialog ? 'none': 'inline-block'}}>
           <Drawer
@@ -640,6 +652,7 @@ export class App extends Component<App.Props, App.State> {
         if(result && result.authentication) {
           if(result.authentication === 'SUCCESS') {
             localStorage.setItem('webex', JSON.stringify(this.state.webex));
+            this.api.initialize();
             this.getEvents();
           }
           this.setState({ webExAuthResult: result.authentication });
