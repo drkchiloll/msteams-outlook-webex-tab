@@ -3,7 +3,7 @@ import * as Promise from 'bluebird';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 import { EventEmitter } from 'events';
-import { Properties } from '../properties';
+import * as Properties from '../../properties.json';
 
 import axios from 'axios';
 
@@ -16,8 +16,10 @@ const apiEmitter = new EventEmitter();
 export { apiEmitter };
 
 const {
-  AzureApp: {
-    clientId, contentUrl, teamsUrl
+  msApp: {
+    clientId, authority, scopes,
+    webApi, tenant, redirectUri,
+    teamsUrl, contentUrl
   }
 } = Properties;
 
@@ -61,7 +63,7 @@ export interface WebExJoinUrlParameters {
 microsoftTeams.initialize();
 
 export class Api {
-  private headers: any = {'Content-Type': 'application/json'};
+  private headers: any = {'Content-Type':'application/json'};
   private webExMethod: string;
   token: string;
   signedInUser: string;
@@ -206,9 +208,14 @@ export class Api {
   }
 
   webExCreateMeeting(params:any) {
-    return this._request(
-      this.options('/api/webex-meetings', 'post', JSON.stringify(params))
-    )
+    return this._axiosrequest({
+      path: '/api/webex-meetings',
+      method: 'post',
+      data: params
+    });
+    // return this._request(
+    //   this.options('/api/webex-meetings', 'post', JSON.stringify(params))
+    // )
   }
 
   msteamsGenerateMeetingRequest(meeting, attendees) {
@@ -329,7 +336,7 @@ export class Api {
   */
   msteamsComposeDeepLink(subEntityId) {
     let deepLinkUrl = teamsUrl + '/l/entity/';
-    let deepLinkParameters = `${clientId}/webex-scheduler?` +
+    let deepLinkParameters = `${clientId}/webexdev-scheduler?` +
       `webUrl=${contentUrl}/webex-joiner&label=Join WebEx&` +
       `context={"subEntityId":${JSON.stringify(subEntityId)},"canvasUrl":` +
       `"${contentUrl}","channelId":"${this.channelId}"}`;
@@ -408,7 +415,7 @@ export class Api {
 
   msteamsOutlookTimeFinder({ token, user }) {}
 
-  webExLaunchPersonalRoom() {
+  webExLaunchPersonalRoom(attendees) {
     return this._axiosrequest({
       path: '/api/webex-meetnow',
       method: 'post',
@@ -416,6 +423,23 @@ export class Api {
         webex: {...this.webex},
         meeting: { agenda: 'the agenda'}
       }
-    });
+    }).then((result:any) => {
+      if(!result) {
+        // Schedule One
+        return Promise.map(attendees, (att:any) => {
+          return { displayName: att.displayName, mail: att.mail };
+        }).then(formattedAttendees => {
+          return this.webExGenerateMeetingRequest({
+            subject: 'Instant Scheduled Meeting',
+            attendees: formattedAttendees,
+            startDate: moment().format('MM/DD/YYYY HH:mm:ss')
+          });
+        }).then(meetingRequest => {
+          return this.webExCreateMeeting(meetingRequest);
+        });
+      } else {
+        return { meetingKey: result.meetingKey };
+      }
+    })
   }
 }
