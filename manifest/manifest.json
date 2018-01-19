@@ -2,13 +2,13 @@
   "$schema": "https://statics.teams.microsoft.com/sdk/v1.2/manifest/MicrosoftTeams.schema.json",
   "manifestVersion": "1.2",
   "version": "1.0.0",
-  "id": "3d73a702-0613-4eb4-85d8-de87f12cb1b5",
-  "packageName": "msteams.webex.ngrok.io",
+  "id": "d45811ec-91e9-4751-927a-8abfb61b5d74",
+  "packageName": "msteams.webexdev.ngrok.io",
   "developer": {
     "name": "Sam Womack",
-    "websiteUrl": "https://msteams-webex.ngrok.io/teams-webex",
-    "termsOfUseUrl": "https://msteams-webex.ngrok.io/tou.html",        
-    "privacyUrl": "https://msteams-webex.ngrok.io/privacy.html"
+    "websiteUrl": "https://msteams-webexdev.ngrok.io/teams-webex",
+    "termsOfUseUrl": "https://msteams-webexdev.ngrok.io/tou.html",
+    "privacyUrl": "https://msteams-webexdev.ngrok.io/privacy.html"
   },
   "name": {
     "short": "WebEx Teams Integration"
@@ -22,9 +22,9 @@
     "color": "webex_88.png"
   },
   "accentColor": "#223344",
-  "validDomains": ["o365.wwtatc.com", "msteams-webex.ngrok.io"],
+  "validDomains": ["o365.wwtatc.com", "*.ngrok.io"],
   "configurableTabs": [{
-    "configurationUrl": "https://msteams-webex.ngrok.io/config",
+    "configurationUrl": "https://msteams-webexdev.ngrok.io/config",
     "canUpdateConfiguration": true,
     "scopes": ["team"]
   }],
