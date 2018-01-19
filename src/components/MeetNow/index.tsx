@@ -49,11 +49,12 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
   @autobind
   launchMeeting() {
     this.setState({ launchBtn: '' });
+    let { attendees, organizer } = this.state;
     const api: Api = this.props.api;
     let key: string, hostJoinUrl: string;
     return api
-      .webExLaunchPersonalRoom()
-      .then(({meetingKey}) => {
+      .webExLaunchPersonalRoom(attendees)
+      .then(({meetingKey}:any) => {
         key = meetingKey;
         return api.webExGetJoinUrl({host: true, meetingKey: key});
       })
@@ -62,7 +63,6 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
         return;
       })
       .then(() => {
-        let { attendees, organizer } = this.state;
         delete organizer.photo;
         return Promise.map(attendees, ({displayName, mail}) => {
           return api.webExGetJoinUrl({
@@ -131,7 +131,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
               label={
                 this.state.launchBtn ||
                 <i className='mdi mdi-rotate-right mdi-spin mdi-24px' 
-                  style={{ verticalAlign: 'middle', color: '#EDE7F6' }} />
+                  style={{ verticalAlign: 'middle', color: '#673AB7' }} />
               }
               primary={true}
               onClick={this.launchMeeting} />
