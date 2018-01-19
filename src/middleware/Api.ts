@@ -144,7 +144,11 @@ export class Api {
     ).then((resp: AxiosResponse<any>) => resp.data);
   }
 
-  private _formatTime(date: string, time:string) {
+  _dateFormatter(date: Date): string {
+    return momenttz.utc(date).tz(momenttz.tz.guess()).format('YYYY-MM-DD');
+  }
+
+  _formatTime(date: string, time:string) {
     if(time.split(' ')[1] === 'am') {
       switch(time.split(':')[0]) {
         case '12':
@@ -185,13 +189,9 @@ export class Api {
   }
 
   webExAuthentication(webex:WebExAuth) {
-    return this._request(
-      this.options(
-        '/api/webex-auth',
-        'post',
-        JSON.stringify(webex)
-      )
-    );
+    return this._axiosrequest({
+      path: '/api/webex-auth', method: 'post', data: webex
+    });
   }
 
   webExGenerateMeetingRequest(meeting) {
@@ -213,9 +213,6 @@ export class Api {
       method: 'post',
       data: params
     });
-    // return this._request(
-    //   this.options('/api/webex-meetings', 'post', JSON.stringify(params))
-    // )
   }
 
   msteamsGenerateMeetingRequest(meeting, attendees) {
@@ -234,11 +231,12 @@ export class Api {
   }
 
   msteamsCreateMeeting(meeting) {
-    return this._request(this.options(
-      `/api/outlook-events?token=${this.token}&timezone=${momenttz.tz.guess()}`,
-      'post',
-      JSON.stringify(meeting)
-    ));
+    return this._axiosrequest({
+      path: `/api/outlook-events`,
+      method: 'post',
+      data: meeting,
+      params: { token: this.token, timezone: momenttz.tz.guess() }
+    });
   }
 
   webExGetJoinUrl(params:WebExJoinUrlParameters) {
