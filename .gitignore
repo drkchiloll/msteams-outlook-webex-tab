@@ -6,7 +6,7 @@ node_modules
 *.log*
 public
 release
-properties.sample.json
+properties.json
 .editorconfig
 package-lock.json
 manifest/*old*
