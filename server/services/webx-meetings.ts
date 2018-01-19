@@ -97,7 +97,6 @@ export function meetingsServFactory(webex: WebEx) {
   };
 
   service.createInstantly = function({webExId='', webExPassword='', agenda=''}) {
-    // Login URL
     const baseUrl = 'https://wwtatc.webex.com/wwtatc';
     let loginUrl =  `${baseUrl}/p.php?`,
         meetingUrl = `${baseUrl}/m.php?`,
@@ -106,7 +105,7 @@ export function meetingsServFactory(webex: WebEx) {
           MU: 'GoBack', BU: encodeURIComponent(baseUrl)
         },
         meetingBody = {
-          AT: 'IM', AG: agenda, PW: 'pass123', BU: baseUrl
+          AT: 'IM', BU: baseUrl
         };
     return webex.instantRequest({ loginUrl, meetingUrl, loginBody, meetingBody })
   };
