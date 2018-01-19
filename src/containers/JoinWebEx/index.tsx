@@ -11,14 +11,27 @@ export class JoinWebEx extends React.Component<any,any> {
     microsoftTeams.initialize()
   }
 
+  isEncoded(uri) {
+    uri = uri || '';
+    return uri !== decodeURIComponent(uri);
+  }
+
+  fullyDecodedUri(uri) {
+    while(this.isEncoded(uri)) {
+      uri = decodeURIComponent(uri);
+    }
+    return uri;
+  }
+
   componentWillMount() {
     microsoftTeams.getContext(({upn, subEntityId}) => {
       if(subEntityId) {
         // An "Instant" Meeting was Launched and the Team Member Clicked
         // On the Join Conference Meeting
         const entities: any = subEntityId;
-        if(entities.find(entity => entity.mail == upn)) {
-          let joinUrl = decodeURIComponent(entities.find(entity => entity.mail == upn).joinUrl)
+        const entity = entities.find(entity => entity.mail === upn);
+        if(entity) {
+          let joinUrl = this.fullyDecodedUri(entity.joinUrl);
           window.open(joinUrl, '_newTab');
         }
       }
