@@ -179,7 +179,7 @@ export class WebExSettings extends React.Component<any,any> {
         backGroundColor: 'white',
         saveBtnLabel: 'Save'
       });
-      // this.props.close();
+      this.props.close();
     } else if(saveBtnLabel === 'Save') {
       this.updateState('checking');
       this.props.save();
