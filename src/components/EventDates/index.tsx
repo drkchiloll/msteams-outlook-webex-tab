@@ -11,32 +11,9 @@ import {
 } from 'material-ui';
 
 export class EventDates extends React.Component<any, any> {
-  state = { endDate: new Date() }
-
-  dateFormatter(date: Date): string {
-    return momenttz.utc(date).tz(momenttz.tz.guess()).format('YYYY-MM-DD');
-  }
-
-  formatTime(date: string, time: string) {
-    if(time.split(' ')[1] === 'am') {
-      switch(time.split(':')[0]) {
-        case '12':
-          return date + 'T' + '00:' + time.split(':')[1].split(' ')[0];
-        case '11':
-        case '10':
-          return date + 'T' + time.split(' ')[0];
-        default:
-          return date + 'T' + '0' + time.split(' ')[0];
-      }
-    } else {
-      switch(time.split(':')[0]) {
-        case '12':
-          return date + 'T' + time.split(' ')[0];
-        default:
-          return date + 'T' + (parseInt(time.split(':')[0], 10) + 12) +
-            ':' + time.split(':')[1].split(' ')[0];
-      }
-    }
+  constructor(props) {
+    super(props);
+    this.state = { endDate: new Date() }
   }
 
   styles = {
@@ -54,10 +31,10 @@ export class EventDates extends React.Component<any, any> {
 
   @autobind
   durationChangeHandler(e:any, index: number, value: string) {
-    let { startTime } = this.props,
+    let { startTime, api } = this.props,
         dateFormat = 'YYYY-MM-DD',
         startDate = moment().format(dateFormat);
-    const formattedDate = moment(this.formatTime(startDate, startTime));
+    const formattedDate = moment(api._formatTime(startDate, startTime));
     this.durationValue = value;
     if(value === '1 hour') value = '1 hours';
     if(value === '1.5 hours') value = '90 minutes';
@@ -70,7 +47,7 @@ export class EventDates extends React.Component<any, any> {
   durationValue = '30 minutes';
 
   render() {
-    let { startTime, endTime, startDate, endDate } = this.props;
+    let { startTime, endTime, startDate, endDate, api } = this.props;
     return (
       <div style={{ position: 'relative' }}>
         <Row>
@@ -92,10 +69,10 @@ export class EventDates extends React.Component<any, any> {
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date });
                     this.props.inputChange(
-                      'startDate', this.dateFormatter(date)
+                      'startDate', api._dateFormatter(date)
                     );
                     this.props.inputChange(
-                      'endDate', this.dateFormatter(date)
+                      'endDate', api._dateFormatter(date)
                     )
                   }} />
               </Col>
@@ -139,7 +116,7 @@ export class EventDates extends React.Component<any, any> {
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date })
                     this.props.inputChange(
-                      'endDate', this.dateFormatter(date)
+                      'endDate', api._dateFormatter(date)
                     );
                   }} />
               </Col>

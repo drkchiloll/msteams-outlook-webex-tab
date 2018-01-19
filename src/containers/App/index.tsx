@@ -368,7 +368,8 @@ export class App extends Component<App.Props, App.State> {
             <EventForm inputChange={this.eventFormHandler}/>
             <EventDates
               inputChange={this.eventFormHandler}
-              {...this.state.newMeeting} />
+              {...this.state.newMeeting}
+              api={this.api} />
             <Row>
               <Col sm={4} >
                 <AutoComplete
