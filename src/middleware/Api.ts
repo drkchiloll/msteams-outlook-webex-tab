@@ -1,4 +1,3 @@
-import * as $ from 'jquery';
 import * as Promise from 'bluebird';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
@@ -112,19 +111,6 @@ export class Api {
     localStorage.setItem('msTeamsContext', JSON.stringify(msTeamsContext));
     this.signedInUserEmail = msTeamsContext.upn;
     this.teamGroupId = msTeamsContext.groupId;
-  }
-
-  private options(path, method, data?) {
-    return {
-      url: path,
-      method,
-      headers: this.headers,
-      data
-    };
-  }
-
-  private _request(options) {
-    return $.ajax(options);
   }
 
   private _axiosoptions(opts:any): AxiosRequestConfig {
@@ -258,9 +244,9 @@ export class Api {
       }
     }
     body['webex'] = webex;
-    return this._request(this.options(
-      path, 'post', JSON.stringify(body)
-    ))
+    return this._axiosrequest({
+      path, method: 'post', data: body
+    });
   }
 
   msteamsGetMe() {
@@ -272,13 +258,13 @@ export class Api {
   }
 
   msteamsGetPhoto(id) {
-    return this._request(this.options(
-      `/api/users/${id}/photo`,
-      'get',
-      { token: this.token }
-    )).then((resp: any) => {
+    return this._axiosrequest({
+      path: `/api/users/${id}/photo`,
+      method: 'get',
+      params: { token: this.token }
+    }).then((resp:any) => {
       if(resp && resp.message) return null;
-      else return resp;
+      return resp;
     });
   }
 
@@ -286,13 +272,11 @@ export class Api {
     if(!this.token && !this.signedInUser && !this.teamGroupId) {
       this.initialize();
     }
-    return this._request(
-      this.options(
-        `/api/teams`,
-        'get',
-        { token: this.token, groupId: this.teamGroupId }
-      )
-    ).then(({ value, status }) => {
+    return this._axiosrequest({
+      path: '/api/teams',
+      method: 'get',
+      params: { token: this.token, groupId: this.teamGroupId }
+    }).then(({ value, status }) => {
       if(status && status === 401) { // EventEmitter ?
         apiEmitter.emit('401');
         apiEmitter.on('authenticated', () => {
@@ -321,12 +305,10 @@ export class Api {
     });
   }
 
-  msteamsUserSearch(searchText) {
-    return this._request(this.options(
-      '/api/users',
-      'get',
-      { token: this.token, users: searchText }
-    ))
+  msteamsUserSearch(text) {
+    return this._axiosrequest({
+      path:'/api/users', method:'get', params: {token: this.token, users: text}
+    });
   }
 
   /* subEntityId?
@@ -347,22 +329,22 @@ export class Api {
       name: 'Join the Conference',
       targets: [{ os: 'default', uri: this.msteamsComposeDeepLink(subEntityId)}]
     }]
-    return this._request(this.options(
-      `/api/msteams-dialoghandler`,
-      'post',
-      JSON.stringify({ actionCards, organizer })
-    ))
+    return this._axiosrequest({
+      path: '/api/msteams-dialoghandler',
+      method: 'post',
+      data: { actionCards, organizer }
+    });
   }
 
   msteamsGetOutlookEvents({ token }) {
     let timezone = momenttz.tz.guess();
-    return this._request(this.options(
-      `/api/outlook-events`,
-      'get',
-      { token: this.token, timezone }
-    )).then((resp:any) => {
+    return this._axiosrequest({
+      path: '/api/outlook-events',
+      method: 'get',
+      params: { token: this.token, timezone }
+    }).then((resp:any) => {
       if(resp && resp.status === 401) return null;
-      else return resp;
+      return resp;
     });
   }
 
@@ -404,11 +386,12 @@ export class Api {
   }
 
   msteamsCreateWebHook() {
-    return this._request(this.options(
-      '/api/subscriptions?token={this.token}',
-      'post',
-      JSON.stringify(this._constructWebHookBody)
-    ))
+    return this._axiosrequest({
+      path: '/api/subscriptions',
+      method: 'post',
+      data: this._constructWebHookBody,
+      params: { token: this.token }
+    });
   }
 
   msteamsOutlookTimeFinder({ token, user }) {}
