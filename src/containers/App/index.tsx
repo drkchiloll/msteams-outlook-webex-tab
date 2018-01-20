@@ -3,7 +3,6 @@ const { Component } = React;
 import * as Promise from 'bluebird';
 import * as style from './style.css';
 import { RouteComponentProps } from 'react-router';
-import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
 import { UserAgentApplication } from 'msalx';
 import * as moment from 'moment';
@@ -68,7 +67,7 @@ export class App extends Component<App.Props, App.State> {
     (errDesc:string, token:string, err:string, tokenType: string) => {
       console.log(token);
       console.log(tokenType);
-    }, { redirectUri }
+    }, { redirectUri: 'https://msteams-webexdev.ngrok.io/teams-webex' }
   )
 
   callTeams = function(fromEmitter?) {
@@ -85,17 +84,6 @@ export class App extends Component<App.Props, App.State> {
         this.setState({ accessToken });
         if(this.state.webex.webExId) {
           return this.getEvents();
-          // .then(() => {
-          //   if(!subscriptionId) {
-          //     this.createWebHook();
-          //   } else {
-          //     return this.callServer({
-          //       path: 'subscriptions',
-          //       method: 'delete',
-          //       id: subscriptionId
-          //     }).then(() => this.createWebHook())
-          //   }
-          // })
         }
       },
       failureCallback: function(err) { alert(err.toString()) }
@@ -205,7 +193,7 @@ export class App extends Component<App.Props, App.State> {
     setTimeout(() => {
       this.setState({ choiceDialog: false });
       this.credCheck();
-    }, 4500)
+    }, 1500)
   }
 
   @autobind
@@ -217,8 +205,6 @@ export class App extends Component<App.Props, App.State> {
     } else {
       this.setState({ webex: this.api.webex });
     }
-    // let subscriptionId = localStorage.getItem('subscriptionId');
-    // alert(subscriptionId);
     if(!accessToken && this.api.token && this.api.signedInUser)
       this.setState({ accessToken: this.api.token });
     if(this.api.token) {
@@ -226,28 +212,31 @@ export class App extends Component<App.Props, App.State> {
       this.api
         .msteamsGetMe()
         .then((resp: any) => {
-          if(resp && resp.status) this.callTeams();
-          else {
+          if(resp && resp.status) {
+            this.callTeams();
+          } else {
             if(this.api.webex.webExId || this.api.webex.webExPassword) {
               return this.getEvents();
-              // .then(() => {
-              //   if(!subscriptionId) {
-              //     return this.createWebHook();
-              //   } else {
-              //     return this.callServer({
-              //       path: 'subscriptions',
-              //       method: 'delete',
-              //       id: subscriptionId
-              //     }).then(() => this.createWebHook())
-              //   }
-              // })
             }
           }
         })
     } else {
-      this.callTeams();
+      let isInIFrame: boolean = top.location != self.location
+      if(isInIFrame) this.callTeams();
+      else {
+        this.clientApplication
+          .loginPopup(scopes)
+          .then((value) => {
+            microsoftTeams.getContext((context:any) => {
+              console.log(context);
+            })
+          })
+      }
     }
   }
+
+  @autobind
+  frameCheck() {}
 
   @autobind
   authActions({ accessToken, signedInUser, context={}, fromEmitter=false }) {
