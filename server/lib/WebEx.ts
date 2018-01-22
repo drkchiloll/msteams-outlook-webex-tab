@@ -1,4 +1,3 @@
-import * as request from 'request';
 import * as Promise from 'bluebird';
 import * as xml2js from 'xml2js';
 import {  properties as Properties } from '../services';
@@ -69,7 +68,7 @@ export class WebEx {
         if(!successFail) return null;
         else return { meetingKey: successFail[1] };
       });
-  }
+  };
 
   js2xml(o: Object) {
     return Promise.resolve((xmlBuilder.buildObject(o)));
@@ -87,16 +86,12 @@ export class WebEx {
     );
   };
 
-  _request(options: any) {
-    return new Promise((resolve:any, reject:any) => {
-      request.post({
-        uri,
-        headers,
-        strictSSL: false,
-        body: options.body
-      }, (err: any, resp: any, body: any) => {
-        resolve(body)
-      });
-    });
+  _axiosrequest({body}) {
+    return axios({
+      url: uri,
+      method: 'post',
+      headers,
+      data: body
+    }).then(({data}) => data);
   };
 }

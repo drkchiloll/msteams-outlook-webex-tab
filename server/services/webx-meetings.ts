@@ -28,7 +28,7 @@ export function meetingsServFactory(webex: WebEx) {
     }).then((query: string) => {
       return webex.genXml(query);
     }).then((xml: string) => {
-      return webex._request({ body: xml });
+      return webex._axiosrequest({ body: xml });
     }).then((xml: string) => {
       return xml.replace(/meet\:/gi, '')
     }).then((xml:string) => {
@@ -45,7 +45,7 @@ export function meetingsServFactory(webex: WebEx) {
     }).then((query) => {
       return webex.genXml(query);
     }).then((xml) => {
-      return webex._request({ body: xml });
+      return webex._axiosrequest({ body: xml });
     }).then((xml: string) => {
       return xml
         .replace(/meet\:/gi, '')
@@ -144,7 +144,7 @@ export function meetingsServFactory(webex: WebEx) {
       return webex.genXml(xml);
     }).then((xml:string) => {
       // console.log(xml);
-      return webex._request({ body: xml});
+      return webex._axiosrequest({ body: xml});
     }).then((resp: any) => {
       let xml = resp;
       // console.log(xml);

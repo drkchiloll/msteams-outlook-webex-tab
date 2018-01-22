@@ -16,7 +16,7 @@ export function userServFactory(webex: WebEx) {
     }).then((xml: string) => {
       return webex.genXml(xml.replace('/', '').replace(/\>/i, '/>'));
     }).then((xml: string) => {
-      return webex._request({ body: xml });
+      return webex._axiosrequest({ body: xml });
     }).then((xmlResp: string) => xmlResp);
   };
 
@@ -38,7 +38,7 @@ export function userServFactory(webex: WebEx) {
       return webex.genXml(query);
     }).then((xml:string) => {
       console.log(xml);
-      return webex._request({body: xml});
+      return webex._axiosrequest({body: xml});
     });
   };
 
