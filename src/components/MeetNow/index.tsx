@@ -47,6 +47,13 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
   }
 
   @autobind
+  addParticipant(attendee) {
+    let { attendees }  = this.state;
+    attendees.unshift(attendee);
+    this.setState({ attendees });
+  }
+
+  @autobind
   launchMeeting() {
     this.setState({ launchBtn: '' });
     let { attendees, organizer } = this.state;
@@ -75,7 +82,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
           api.msteamsDialogBuilder(subEntityId, organizer))
       }).then(() => {
         this.resetState();
-        window.open(hostJoinUrl, '_newTab');
+        window.open(hostJoinUrl, '_newtab');
       })
   }
 
@@ -182,7 +189,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
                     marginTop: 0
                   }}>
                   {/* <CircularProgress size={20} thickness={3} /> */}
-                  <UserSearch />
+                  <UserSearch api={api} addAttendee={this.addParticipant} />
                 </div>
               </Col>
             </Row>
