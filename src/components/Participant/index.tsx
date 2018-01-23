@@ -4,7 +4,7 @@ import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
 import {
   Avatar, IconButton, CardActions, 
-  Paper, ListItem
+  Paper, ListItem, Divider
 } from 'material-ui';
 
 export class Participant extends React.Component<any,any> {
@@ -24,21 +24,22 @@ export class Participant extends React.Component<any,any> {
     }
     return (
       <Row>
-        <Col xs={7}>
+        <Col xs={8}>
           <Paper style={{
-            display: 'inline-block', margin: '0 32px 16px 5px', width: 255,
-            position: 'relative'
+            position: 'relative',
+            margin: '0 5px 10px 1px',
+            width: 255
           }}>
-            <div style={{ margin: '0 5px 5px 5px' }}>
+            {/* <div style={{ margin: '0 5px 5px 5px' }}> */}
               <ListItem
                 disabled={true}
                 leftAvatar={user.photo}
                 primaryText={user.displayName}
                 secondaryText={
-                  <p style={{fontSize:'70%'}}>{user.me ? 'Organizer' : user.mail}</p>
+                  <p style={{fontSize:'70%'}}>{user.mail}</p>
                 }
               />
-            </div>
+            {/* </div> */}
             <IconButton
               style={{
                 display: user.me ? 'none' : 'inline-block',

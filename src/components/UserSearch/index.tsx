@@ -15,6 +15,7 @@ export class UserSearch extends React.Component<any,any> {
     users: [{id:'0', displayName: ''}], searchText: '',
     autoCompleteHeight: 25
   }
+  
   api:Api = this.props.api;
 
   styles = {

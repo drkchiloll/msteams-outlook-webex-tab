@@ -27,16 +27,6 @@ export class EventForm extends React.Component<any, any> {
     return (
       <div>
         <Row>
-          <Col xs={12}><h3>New Meeting</h3>
-            <IconButton
-              style={{top: 0, right: 0, position: 'absolute' }}
-              iconClassName='mdi mdi-close mdi-18px'
-              onClick={() => {
-                this.props.inputChange('newEvent', false);
-              }} />
-          </Col>
-        </Row>
-        <Row>
           <Col xs={12}>
             <TextField
               name='title'

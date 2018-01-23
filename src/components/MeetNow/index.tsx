@@ -108,12 +108,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
     let api: Api = this.props.api;
     let {webex} = this.props;
     const { attendees, organizer } = this.state;
-    // The Other Way Mutates ways in which ATTENDEES are modified to
-    // React DOM Elements
     const admin = <Participant user={JSON.parse(JSON.stringify(organizer))} />;
-    // const participants = JSON.parse(JSON.stringify(attendees)).map((attendee) =>
-    //   <Participant user={attendee} key={attendee.id}
-    //     remove={this.removeParticipant} />)
     return (
       <div>
         <RaisedButton
@@ -182,13 +177,11 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
             <Row>
               <Col sm={12}>
                 <div style={{
-                    position: 'absolute',
-                    top: 215,
-                    width: '37%',
-                    // display: this.state.members ? 'none': 'inline-block',
-                    marginTop: 0
-                  }}>
-                  {/* <CircularProgress size={20} thickness={3} /> */}
+                  position: 'absolute',
+                  top: 215,
+                  width: '37%',
+                  marginTop: 0
+                }}>
                   <UserSearch api={api} addAttendee={this.addParticipant} />
                 </div>
               </Col>

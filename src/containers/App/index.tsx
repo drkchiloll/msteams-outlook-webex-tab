@@ -31,7 +31,8 @@ import {
   makeSelectable, TextField,
   DatePicker, SelectField, MenuItem,
   Paper, AutoComplete, Avatar,
-  IconButton, Dialog, FlatButton
+  IconButton, Dialog, FlatButton,
+  Menu
 } from 'material-ui';
 
 export namespace App {
@@ -58,7 +59,8 @@ export namespace App {
 
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import {
-  EventForm, EventDates, WebExSettings, WebExMeetNowDialog
+  EventForm, EventDates, WebExSettings,
+  WebExMeetNowDialog, UserSearch, Participant
 } from '../../components';
 
 export class App extends Component<App.Props, App.State> {
@@ -88,43 +90,6 @@ export class App extends Component<App.Props, App.State> {
       },
       failureCallback: function(err) { alert(err.toString()) }
     });
-  }
-
-  usersHtml(users?) {
-    if(!this.state.searchText && !users) {
-      return [{
-        text: this.state.searchText,
-        value: <MenuItem primaryText={''} />
-      }];
-    } else if(!this.state.users && !users) {
-      return [{
-        text: this.state.searchText,
-        value: (
-          <MenuItem
-            // style={{margin: 0, padding: 0, height: '10px'}}
-            primaryText={
-              <div style={{
-                verticalAlign: 'middle',
-                marginTop: '-20px',
-                marginLeft: '100px',
-                color: '#9575CD'
-              }}>
-                <i className='mdi mdi-rotate-right mdi-spin mdi-18px'/>
-              </div>
-            } />
-        )
-      }];
-    } else {
-      return users.map((user, i) => {
-        return {
-          text: this.state.searchText,
-          value: (
-            <MenuItem key={`user_${i}`}
-              primaryText={<div>{user.displayName}</div>} />
-          )
-        }
-      })
-    }
   }
 
   api:Api = null;
@@ -257,11 +222,11 @@ export class App extends Component<App.Props, App.State> {
         .msteamsGetMe()
         .then((me) => {
           organizer = me;
+          organizer['me'] = true;
           return this.api.msteamsGetPhoto(organizer.id);
         }).then((binaryImg: any) => {
           if(binaryImg) {
-            let img = new Buffer(binaryImg, 'binary').toString('base64');
-            organizer.photo = 'data:image/jpg;base64,' + img;
+            organizer.photo = binaryImg;
           }
           this.setState({ newMeeting, organizer });
         });
@@ -278,29 +243,24 @@ export class App extends Component<App.Props, App.State> {
   }
 
   @autobind
-  attendeeSelector(input, index) {
-    let { users, attendees, accessToken } = this.state;
-    let selectedUser = users[index];
-    return this.api
-      .msteamsGetPhoto(selectedUser.id)
-      .then((binaryImg:any) => {
-        if(binaryImg) {
-          let img = new Buffer(binaryImg, 'binary').toString('base64');
-          selectedUser.photo = `data:image/jpg;base64,${img}`;
-        }
-        return selectedUser;
-      }).then(() => {
-        attendees.push(selectedUser);
-        this.setState({ attendees });
-        this.setState({
-          searchText: '',
-          users: null,
-          autoCompleteMenuHeight: 25
-        });
-      })
+  addParticipant(attendee) {
+    let { attendees } = this.state;
+    attendees.unshift(attendee);
+    this.setState({ attendees });
+  }
+
+  @autobind
+  removeParticipant(attendeeId) {
+    let { attendees } = this.state;
+    let idx = attendees.findIndex(attendee =>
+      attendee.id === attendeeId);
+    attendees.splice(idx, 1);
+    this.setState({ attendees });
   }
 
   render() {
+    const admin = JSON.parse(JSON.stringify(this.state.organizer)) || '';
+    const attendees = JSON.parse(JSON.stringify(this.state.attendees));
     return (
       <div>
         <Dialog title={
@@ -325,7 +285,10 @@ export class App extends Component<App.Props, App.State> {
           your organization to a Meeting; If you have previously Authenticated and your Credentials haven't expired
           you will not be required to Authenticate again until such time your access token expires.
         </Dialog>
-        <div style={{fontSize: '90%', display: this.state.choiceDialog ? 'none': 'inline-block'}}>
+        <div style={{
+          display: this.state.choiceDialog ? 'none' : 'inline-block',
+          fontSize: '90%'
+        }}>
           <Drawer
             docked={true}
             width={285}
@@ -348,159 +311,78 @@ export class App extends Component<App.Props, App.State> {
             </div>
           </Drawer>
         </div>
-        <Paper style={{
-          left: 300, position: 'fixed', top: 0, height: 'auto',
-          display: this.state.newMeeting.newEvent ? 'inline-block' : 'none',
-          width: 650
-        }} zDepth={2} >
-          <Grid fluid>
+        <Dialog
+          title='Schedule New Meeting'
+          modal={false}
+          open={this.state.newMeeting.newEvent}
+          style={{
+            position: 'relative', height: 'auto',
+            maxWidth: 'none', width: '100%'
+          }}
+          actions={[
+            <FlatButton
+              label='Cancel'
+              primary={true}
+              onClick={() => {
+                this.eventFormHandler('newEvent', false);
+              }} />,
+            <FlatButton
+              primary={true}
+              label={
+                this.state.newMeetingBtnLabel ||
+                <i className='mdi mdi-rotate-right mdi-spin mdi-18px'
+                  style={{
+                    marginLeft: '10px', verticalAlign: 'middle', color: '#EDE7F6'
+                  }} />
+              }
+              onClick={this.createMeeting} />
+          ]} >
+          <Grid>
             <EventForm inputChange={this.eventFormHandler}/>
             <EventDates
               inputChange={this.eventFormHandler}
               {...this.state.newMeeting}
               api={this.api} />
             <Row>
-              <Col sm={4} >
-                <AutoComplete
-                  floatingLabelText='Invite someone'
-                  menuStyle={{ height: this.state.autoCompleteMenuHeight, margin: 0, padding: 0 }}
-                  listStyle={{ maxHeight: 200, overflow: 'auto' }}
-                  filter={AutoComplete.noFilter}
-                  dataSource={this.usersHtml(this.state.users)}
-                  onUpdateInput={(text: string) => {
-                    if(!text) 
-                      return this.setState({
-                        searchText: '',
-                        users: null,
-                        autoCompleteMenuHeight: 25
-                      });
-                    this.setState({ searchText: text });
-                    this.api
-                      .msteamsUserSearch(text)
-                      .then(({ value }) => {
-                        if(value.length === 0) {
-                          value.push({
-                            id: '0',
-                            displayName: `We didn't find any matches`
-                          });
-                        }
-                        this.setState({ users: value, autoCompleteMenuHeight: 'auto' });
-                      });
-                  }}
-                  onNewRequest={this.attendeeSelector}
-                  searchText={this.state.searchText}
-                  openOnFocus={true} />
-              </Col>
-            </Row>
-            <Row>
-              <Col xs={5}><h4>Organizer</h4></Col>
-            </Row>
-            <Row>
-              <Col xs={5}>
-                  { this.state.organizer ?
-                    <Paper style={{
-                      display: 'inline-block',
-                      margin: '0 32px 16px 0',
-                      width: 250
-                    }}>
-                      <div style={{ margin: '10px 5px 10px 10px' }}>
-                        <Row>
-                          <Col xs={3}>
-                            <Avatar src={this.state.organizer.photo} />
-                          </Col>
-                          <Col xs={8}>
-                            <Row><Col xs={9}>{this.state.organizer.displayName}</Col></Row>
-                            <Row><Col xs={3}><em>Organizer</em></Col></Row>
-                          </Col>
-                        </Row>
-                      </div>
-                    </Paper>
-                    :
-                    <div></div>}
-              </Col>
-            </Row>
-            <Row>
-              <Col xs={8}><h4>Participants</h4></Col>
-            </Row>
-            <Row>
-              <Col xs={8}>
-                {
-                  this.state.attendees.length > 0 ?
-                  this.state.attendees.map((attendee) => {
-                    if(!attendee) return;
-                    return (
-                      <Paper style={{
-                        display: 'inline-block',
-                        margin: '0 32px 16px 0',
-                        width: 250
-                      }}
-                        key={attendee.id} >
-                        <div style={{ margin: '10px 5px 10px 10px' }}>
-                          <Row>
-                            <Col xs={2}>
-                              {
-                                attendee.photo ?
-                                  <Avatar src={attendee.photo} /> :
-                                  <Avatar color='#D1C4E9' backgroundColor='#673AB7'>
-                                    {
-                                      attendee.displayName.split(' ')[0].substring(0, 1).toUpperCase() +
-                                      attendee.displayName.split(' ')[1].substring(0, 1).toUpperCase()
-                                    }
-                                  </Avatar>
-                              }
-                            </Col>
-                            <Col xs={7}>
-                              <div style={{ marginLeft: '15px' }}>
-                                <Row><Col xs={12}>{attendee.displayName}</Col></Row>
-                                <Row>
-                                  <Col xs={12}>
-                                    <em style={{
-                                      color: attendee.status==='busy' ? 'red': ''
-                                    }}>
-                                      {attendee.status}
-                                    </em>
-                                  </Col>
-                                </Row>
-                              </div>
-                            </Col>
-                            <Col xs={2}>
-                                <IconButton
-                                  style={{ bottom: 5, position: 'relative' }}
-                                  iconClassName='mdi mdi-close mdi-18px'
-                                  onClick={() => {
-                                    let { attendees } = this.state;
-                                    let attendeeIdx = attendees.findIndex(att => 
-                                      att.id === attendee.id)
-                                    attendees.splice(attendeeIdx, 1);
-                                    this.setState({ attendees });
-                                  }} />
-                            </Col>
-                          </Row>
-                        </div>
-                      </Paper>
-                    )
-                  })
-                  :
-                  <div></div>
-                }
-              </Col>
-              <Col xs={4}>
-                <RaisedButton
-                  style={{ bottom: 0, right: 0, position: 'absolute', width: 225 }}
-                  primary={true}
-                  label={
-                    this.state.newMeetingBtnLabel ||
-                    <i
-                      className='mdi mdi-rotate-right mdi-spin mdi-18px'
-                      style={{ marginLeft: '10px', verticalAlign: 'middle', color: '#EDE7F6' }}>
-                    </i>
+              <Col xsOffset={6} xs={5}>
+                <div style={{ marginTop: '5px'}}>
+                  <Subheader>Organizer</Subheader>
+                  {
+                    admin ?
+                      <Participant user={admin} />
+                      :
+                      <div></div>
                   }
-                  onClick={this.createMeeting} />
+                  <Menu maxHeight={275} >
+                    <Subheader>Participants</Subheader>
+                    {
+                      attendees.length > 0 ?
+                        attendees.map((attendee: any) =>
+                          (<Participant
+                            key={attendee.id}
+                            user={attendee}
+                            remove={this.removeParticipant}
+                          />))
+                        :
+                        null
+                    }
+                  </Menu>
+                </div>
+              </Col>
+            </Row>
+            <Row>
+              <Col sm={12} >
+                <div style={{
+                  position: 'absolute',
+                  top: 285,
+                  width: '37%'
+                }}>
+                  <UserSearch api={this.api} addAttendee={this.addParticipant} />
+                </div>
               </Col>
             </Row>
           </Grid>
-        </Paper>
-
+        </Dialog>
         <WebExSettings
           api={this.api}
           webex={this.state.webex}
