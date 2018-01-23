@@ -258,14 +258,12 @@ export class Api {
   }
 
   msteamsGetPhoto(id) {
-    return this._axiosrequest({
-      path: `/api/users/${id}/photo`,
-      method: 'get',
-      params: { token: this.token }
-    }).then((resp:any) => {
-      if(resp && resp.message) return null;
-      return resp;
-    });
+    const userphotoreq = axios.create({ baseURL: webApi });
+    userphotoreq.defaults.headers.common['Authorization'] = this.token;
+    return userphotoreq
+      .get(`/users/${id}/photo/$value`, {responseType: 'arraybuffer'})
+      .then(({data}) => Buffer.from(data, 'binary'))
+      .catch(() => null)
   }
 
   msteamsMembers() {
@@ -296,10 +294,6 @@ export class Api {
             user.photo = photo;
             return user;
           });
-        }).then((users: any) => {
-          return users.sort(function (a, b) {
-            return (a.me === b.me) ? -1 : a ? 1 : -1;
-          })
         });
       }
     });
