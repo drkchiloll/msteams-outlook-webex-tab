@@ -9,7 +9,7 @@ import axios from 'axios';
 import { stringify } from 'querystring'
 import axiosCookieJarSupport from '@3846masa/axios-cookiejar-support';
 import * as tough from 'tough-cookie';
-axiosCookieJarSupport(axios);
+// axiosCookieJarSupport(axios);
 
 import {
   MeetingService
@@ -53,16 +53,20 @@ export class WebEx {
 
   instantRequest(params:any) {
     let { loginUrl, meetingUrl, loginBody, meetingBody } = params;
+    let instrequest = axios.create();
+    axiosCookieJarSupport(instrequest);
     const cookieJar = new tough.CookieJar();
-    axios.defaults.jar = cookieJar;
-    axios.defaults.withCredentials = true;
-    return axios.post(loginUrl, stringify(loginBody))
+    instrequest.defaults.jar = cookieJar;
+    instrequest.defaults.withCredentials = true;
+    // axios.defaults.jar = cookieJar;
+    // axios.defaults.withCredentials = true;
+    return instrequest.post(loginUrl, stringify(loginBody))
       .then((resp) => {
         // console.log(resp.data);
         const meetingForm = Object.keys(meetingBody).map(key =>
          `${encodeURI(key)}=${encodeURIComponent(meetingBody[key])}`).join('&');
         let meetUrl = meetingUrl + meetingForm;
-        return axios.get(meetUrl)
+        return instrequest.get(meetUrl)
       }).then((resp) => {
         let successFail = resp.data.match(/SUCCESS\\x26MK\\x3d(.\d+)\\x/);
         if(!successFail) return null;
