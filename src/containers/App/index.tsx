@@ -81,12 +81,15 @@ export class App extends Component<App.Props, App.State> {
         let {
           accessToken, signedInUser, context
         } = JSON.parse(result);
-        this.authActions({ accessToken, signedInUser, context, fromEmitter });
-        // let subscriptionId = localStorage.getItem('subscriptionId');
-        this.setState({ accessToken });
-        if(this.state.webex.webExId) {
-          return this.getEvents();
-        }
+        this.authActions({
+          accessToken, signedInUser, context, fromEmitter
+        }).then(() => {
+          // let subscriptionId = localStorage.getItem('subscriptionId');
+          this.setState({ accessToken });
+          if(this.state.webex.webExId) {
+            return this.getEvents();
+          }
+        })
       },
       failureCallback: function(err) { alert(err.toString()) }
     });
@@ -175,7 +178,8 @@ export class App extends Component<App.Props, App.State> {
     if(this.api.token) {
       //Check if it's still Good
       this.api
-        .msteamsGetMe()
+        .graphService
+        .getMe()
         .then((resp: any) => {
           if(resp && resp.status) {
             this.callTeams();
@@ -201,9 +205,6 @@ export class App extends Component<App.Props, App.State> {
   }
 
   @autobind
-  frameCheck() {}
-
-  @autobind
   authActions({ accessToken, signedInUser, context={}, fromEmitter=false }) {
     this.api.setToken(accessToken);
     this.api.setUser(signedInUser);
@@ -211,6 +212,8 @@ export class App extends Component<App.Props, App.State> {
       this.api.setTeamsContext(context);
     }
     if(fromEmitter) apiEmitter.emit('authenticated');
+    this.api.initialize();
+    return Promise.resolve(null);
   }
 
   @autobind
@@ -218,12 +221,12 @@ export class App extends Component<App.Props, App.State> {
     let { organizer, newMeeting } = this.state;
     newMeeting.newEvent = true;
     if(!organizer) {
-      return this.api
-        .msteamsGetMe()
+      return this.api.graphService
+        .getMe()
         .then((me) => {
           organizer = me;
           organizer['me'] = true;
-          return this.api.msteamsGetPhoto(organizer.id);
+          return this.api.graphService.getUserPhoto(organizer.id);
         }).then((binaryImg: any) => {
           if(binaryImg) {
             organizer.photo = binaryImg;
@@ -317,7 +320,7 @@ export class App extends Component<App.Props, App.State> {
           open={this.state.newMeeting.newEvent}
           style={{
             position: 'relative', height: 'auto',
-            maxWidth: 'none', width: '100%'
+            maxWidth: 'none', width: '100%', top: 25
           }}
           actions={[
             <FlatButton
@@ -328,6 +331,7 @@ export class App extends Component<App.Props, App.State> {
               }} />,
             <FlatButton
               primary={true}
+              disabled={!this.state.newMeeting.title}
               label={
                 this.state.newMeetingBtnLabel ||
                 <i className='mdi mdi-rotate-right mdi-spin mdi-18px'

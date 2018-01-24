@@ -78,7 +78,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
             attendee: { displayName, mail},
             meetingType: 'personal'
           }).then(({joinUrl}) => ({mail, joinUrl}))
-        }).then(subEntityId => 
+        }).then(subEntityId =>
           api.msteamsDialogBuilder(subEntityId, organizer))
       }).then(() => {
         this.resetState();
@@ -88,15 +88,17 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
 
   @autobind
   getTeam() {
+    const api: Api = this.props.api;
     this.setState({ dialogOpen: true });
-    this.props.api.msteamsMembers().then((members: any) => {
-      let organizer = members.find(member => member.me);
-      members.splice(
-        members.findIndex(mem => mem.me), 1
-      );
-      const attendees = members;
-      this.setState({ organizer, members, attendees });
-    });
+    api.graphService.getTeam()
+      .then((members:any) => {
+        let organizer = members.find(member => member.me);
+        members.splice(
+          members.findIndex(mem => mem.me), 1
+        );
+        const attendees = members;
+        this.setState({ organizer, members, attendees });
+      });
   }
 
   @autobind

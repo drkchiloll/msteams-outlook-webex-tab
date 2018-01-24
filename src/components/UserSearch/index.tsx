@@ -78,8 +78,8 @@ export class UserSearch extends React.Component<any,any> {
   userSearch(text) {
     this.setState({ searchText: text });
     if(!text) return this.setState(initialState);
-    this.api
-      .msteamsUserSearch(text)
+    this.api.graphService
+      .getUsersWithQuery(text)
       .then(({ value }) => {
         if(value.length === 0) {
           let users = initialState.users;
@@ -91,7 +91,6 @@ export class UserSearch extends React.Component<any,any> {
             this.setState({users: a, autoCompleteHeight: 'auto'});
             return a;
           },[]);
-          // this.setState({ users: value, autoCompleteHeight: 'auto' })
         }
       });
   }
@@ -101,8 +100,8 @@ export class UserSearch extends React.Component<any,any> {
     let { users } = this.state;
     this.setState({ searchText: users[index].displayName });
     let selectedUser: any = users[index];
-    return this.api
-      .msteamsGetPhoto(selectedUser.id)
+    return this.api.graphService
+      .getUserPhoto(selectedUser.id)
       .then((photo) => {
         selectedUser.photo = photo;
         return selectedUser;

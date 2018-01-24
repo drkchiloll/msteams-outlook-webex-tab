@@ -59,6 +59,8 @@ export interface WebExJoinUrlParameters {
   meetingType?: string;
 }
 
+import { graphServiceFactory, GraphService } from './msgraph-service';
+
 microsoftTeams.initialize();
 
 export class Api {
@@ -70,6 +72,7 @@ export class Api {
   channelId: string;
   webex: WebExAuth;
   teamGroupId: string;
+  graphService: any;
   constructor() {}
 
   resetLocalStorage() {
@@ -95,6 +98,7 @@ export class Api {
       this.signedInUserEmail = null;
       this.teamGroupId = null;
     }
+    this.graphService = graphServiceFactory(this);
   }
 
   setToken(token) {
@@ -249,65 +253,6 @@ export class Api {
     });
   }
 
-  msteamsGetMe() {
-    return this._axiosrequest({
-      path: '/api/me',
-      method: 'get',
-      params: {token: this.token}
-    });
-  }
-
-  msteamsGetPhoto(id) {
-    const userphotoreq = axios.create({ baseURL: webApi });
-    userphotoreq.defaults.headers.common['Authorization'] = this.token;
-    return userphotoreq
-      .get(`/users/${id}/photo/$value`, {responseType: 'arraybuffer'})
-      .then(({data}) => Buffer.from(data, 'binary'))
-      .catch(() => null)
-  }
-
-  msteamsMembers() {
-    if(!this.token && !this.signedInUser && !this.teamGroupId) {
-      this.initialize();
-    }
-    return this._axiosrequest({
-      path: '/api/teams',
-      method: 'get',
-      params: { token: this.token, groupId: this.teamGroupId }
-    }).then(({ value, status }) => {
-      if(status && status === 401) { // EventEmitter ?
-        apiEmitter.emit('401');
-        apiEmitter.on('authenticated', () => {
-          return this.msteamsMembers();
-        });
-      } else {
-        return Promise.map(value, (u: any) => {
-          let user: any = {
-            id: u.id,
-            displayName: u.displayName,
-            mail: u.mail,
-            removed: false
-          };
-          if(user.displayName === this.signedInUser) user.me = true;
-          else user.me = false;
-          return this.msteamsGetPhoto(user.id).then((photo) => {
-            user.photo = photo;
-            return user;
-          });
-        });
-      }
-    });
-  }
-
-  msteamsUserSearch(text) {
-    return this._axiosrequest({
-      path:'/api/users', method:'get', params: {token: this.token, users: text}
-    });
-  }
-
-  /* subEntityId?
-    "[{"email":"email","joinUrl":"url"}]"
-  */
   msteamsComposeDeepLink(subEntityId) {
     let deepLinkUrl = teamsUrl + '/l/entity/';
     let deepLinkParameters = `${clientId}/webexdev-scheduler?` +
