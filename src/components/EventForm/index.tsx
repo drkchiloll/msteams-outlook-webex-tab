@@ -11,16 +11,34 @@ import {
 } from 'material-ui';
 
 export class EventForm extends React.Component<any, any> {
+  state = {
+    errorText: '',
+    title: ''
+  }
 
+  @autobind
   meetingProps(e: any, value: string) {
     let { name } = e.target;
     this.props.inputChange(name, value);
+    if(name==='title') this.setState({ title: value });
   }
 
   styles = {
     textField: {
       width: 400, maxWidth: 570
     }
+  }
+
+  @autobind
+  titleFocus() {
+    if(this.state.errorText)
+      this.setState({ errorText: '' });
+  }
+
+  @autobind
+  titleBlur() {
+    if(!this.state.title)
+      this.setState({ errorText: 'This Field is Required' });
   }
 
   render() {
@@ -30,10 +48,14 @@ export class EventForm extends React.Component<any, any> {
           <Col xs={12}>
             <TextField
               name='title'
+              value={this.state.title}
+              autoFocus
               hintText='Title'
               style={this.styles.textField}
-              onChange={(e, value) =>
-                this.props.inputChange('title', value)} />
+              errorText={this.state.errorText}
+              onFocus={this.titleFocus}
+              onChange={this.meetingProps}
+              onBlur={this.titleBlur} />
           </Col>
         </Row>
         <Row>
@@ -42,8 +64,7 @@ export class EventForm extends React.Component<any, any> {
               name='location'
               hintText='Location'
               style={this.styles.textField}
-              onChange={(e, value) =>
-                this.props.inputChange('location', value)} />
+              onChange={this.meetingProps} />
           </Col>
         </Row>
       </div>
