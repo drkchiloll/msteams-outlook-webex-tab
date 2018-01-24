@@ -114,9 +114,9 @@ export const msTeamsController: MSTeamsController = (() => {
   };
 
   c.hooks = function(req: Request, res: Response) {
-    console.log(req.query);
+    // console.log(req.query);
     if(req.query.validationToken) return res.status(200).send(req.query.validationToken);
-    console.log(req.body);
+    console.log(JSON.stringify(req.body));
     res.status(202).send({});
     io.emit('notification_received', req.body);
   };
