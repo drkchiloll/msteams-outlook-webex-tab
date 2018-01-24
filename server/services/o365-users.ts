@@ -31,26 +31,5 @@ export function o365UserServFactory(graph: MsGraph) {
     });
   }
 
-  service.getPhoto = function(id) {
-    let method = 'get',
-        body = {},
-        path = `/beta/users/${id}/photo`;
-    return graph._request({
-      method,
-      path,
-      body
-    }).then((resp: any) => {
-      if(resp && resp.id !== '1x1') {
-        return graph._request({
-          method,
-          body,
-          path: path + `s/${resp.id}/$value`
-        });
-      } else {
-        return null;
-      }
-    });
-  };
-
   return service;
 }
