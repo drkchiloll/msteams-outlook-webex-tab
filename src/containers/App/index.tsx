@@ -266,61 +266,12 @@ export class App extends Component<App.Props, App.State> {
     const attendees = JSON.parse(JSON.stringify(this.state.attendees));
     return (
       <div>
-        <Dialog title={
-          <span className='mdi mdi-cisco-webex mdi-18px'>
-            &nbsp;Welcome
-          </span>}
-          open={this.state.choiceDialog && !this.state.hasSubentityId}
-          // actions={[
-          //   <FlatButton label='Join Meeting'
-          //     onClick={() => {window.location.pathname = '/join-webex' }} />,
-          //   <FlatButton label='Authorize Application' 
-          //     onClick={() => {
-          //       this.setState({ choiceDialog: false })
-          //       this.credCheck();
-          //     }} />
-          // ]}
-           >
-          <br/>
-          This application requires Authorization and Authentication to your Office 365 Organization
-          with certain permissions granted such as Reading User Data and the ability to Create Events in Outlook.
-          This action also enables the Application to get Team members and/or lookup and add other users within
-          your organization to a Meeting; If you have previously Authenticated and your Credentials haven't expired
-          you will not be required to Authenticate again until such time your access token expires.
-        </Dialog>
-        <div style={{
-          display: this.state.choiceDialog ? 'none' : 'inline-block',
-          fontSize: '90%'
-        }}>
-          <Drawer
-            docked={true}
-            width={285}
-            open={true} >
-            {this.state.evtHtml}
-            <div style={{ display: this.state.events ? 'inline-block': 'none' }}>
-              <RaisedButton
-                label='Schedule A Meeting'
-                style={{
-                  bottom: 2, position: 'relative', marginTop: '15px'
-                }}
-                fullWidth={true}
-                labelPosition='after'
-                icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
-                primary={true}
-                onClick={this.scheduleEvent} />
-              <WebExMeetNowDialog 
-                api={this.api}
-                webex={this.state.webex}/>
-            </div>
-          </Drawer>
-        </div>
         <Dialog
           title='Schedule New Meeting'
           modal={false}
           open={this.state.newMeeting.newEvent}
           style={{
-            position: 'relative', height: 'auto',
-            maxWidth: 'none', width: '100%', top: 25
+            position: 'relative', maxWidth: 'none', top: 0
           }}
           actions={[
             <FlatButton
@@ -336,20 +287,20 @@ export class App extends Component<App.Props, App.State> {
                 this.state.newMeetingBtnLabel ||
                 <i className='mdi mdi-rotate-right mdi-spin mdi-18px'
                   style={{
-                    marginLeft: '10px', verticalAlign: 'middle', color: '#EDE7F6'
+                    marginLeft: '10px', verticalAlign: 'middle', color: '#673AB7'
                   }} />
               }
               onClick={this.createMeeting} />
           ]} >
           <Grid>
-            <EventForm inputChange={this.eventFormHandler}/>
+            <EventForm inputChange={this.eventFormHandler} />
             <EventDates
               inputChange={this.eventFormHandler}
               {...this.state.newMeeting}
               api={this.api} />
             <Row>
               <Col xsOffset={6} xs={5}>
-                <div style={{ marginTop: '5px'}}>
+                <div style={{ marginTop: '5px' }}>
                   <Subheader>Organizer</Subheader>
                   {
                     admin ?
@@ -357,7 +308,7 @@ export class App extends Component<App.Props, App.State> {
                       :
                       <div></div>
                   }
-                  <Menu maxHeight={275} >
+                  <Menu maxHeight={400} >
                     <Subheader>Participants</Subheader>
                     {
                       attendees.length > 0 ?
@@ -387,6 +338,44 @@ export class App extends Component<App.Props, App.State> {
             </Row>
           </Grid>
         </Dialog>
+        <Dialog title={
+          <span className='mdi mdi-cisco-webex mdi-18px'>
+            &nbsp;Welcome
+          </span>}
+          open={this.state.choiceDialog && !this.state.hasSubentityId}>
+          <br/>
+          This application requires Authorization and Authentication to your Office 365 Organization
+          with certain permissions granted such as Reading User Data and the ability to Create Events in Outlook.
+          This action also enables the Application to get Team members and/or lookup and add other users within
+          your organization to a Meeting; If you have previously Authenticated and your Credentials haven't expired
+          you will not be required to Authenticate again until such time your access token expires.
+        </Dialog>
+        <div style={{
+          display: this.state.choiceDialog ? 'none' : 'inline-block',
+          fontSize: '90%'
+        }}>
+          <Drawer
+            docked={true}
+            width={285}
+            open={true} >
+            {this.state.evtHtml}
+            <div style={{ display: this.state.events ? 'inline-block': 'none' }}>
+              <RaisedButton
+                label='Schedule A Meeting'
+                style={{
+                  bottom: 2, position: 'relative', marginTop: '15px'
+                }}
+                fullWidth={true}
+                labelPosition='after'
+                icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
+                primary={true}
+                onClick={this.scheduleEvent} />
+              <WebExMeetNowDialog
+                api={this.api}
+                webex={this.state.webex}/>
+            </div>
+          </Drawer>
+        </div>
         <WebExSettings
           api={this.api}
           webex={this.state.webex}

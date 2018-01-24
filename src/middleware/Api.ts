@@ -189,7 +189,12 @@ export class Api {
       webex: { ...this.webex },
       meeting: {
         subject: meeting.subject,
-        attendees: meeting.attendees,
+        attendees: (() => {
+          return meeting.attendees.map(attendee => {
+            delete attendee.photo;
+            return attendee;
+          })
+        })(),
         startDate: moment(new Date(meeting.startDate)).format('MM/DD/YYYY HH:mm:ss'),
         duration: meeting.duration || 20,
         timeZone: momenttz.tz.guess()
