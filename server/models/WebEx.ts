@@ -37,6 +37,7 @@ export interface TimeZones {
 export interface MeetingService {
   getSummary(): Promise<any>;
   get({ string }): Promise<any>;
+  delete(meetingKey:string): Promise<any>;
   create(CreateMeetingParams): Promise<any>;
   createInstantly(any): Promise<any>;
   joinUrls(ParticipantJoinMeetingUrl): Promise<JoinUrlResult>;

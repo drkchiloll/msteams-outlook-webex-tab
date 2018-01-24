@@ -56,7 +56,17 @@ export function meetingsServFactory(webex: WebEx) {
     }).then((result: any) => result);
   };
 
-  service.create = function({ subject, attendees, startDate, duration, timeZone, agenda='' }) {
+  service.delete = function(meetingKey) {
+    const xsiType = `${xsitype}.meeting.DelMeeting`;
+    return this.meetingHandler({
+      xsiType,
+      content: { meetingKey },
+      tagName: 'result',
+      parser: 'parseResult'
+    });
+  };
+
+  service.create = function({subject, attendees, startDate, duration, timeZone, agenda=''}) {
     const xsiType = `${xsitype}.meeting.CreateMeeting`;
     const meeting = {
       accessControl : { meetingPassword: 'pass123' },

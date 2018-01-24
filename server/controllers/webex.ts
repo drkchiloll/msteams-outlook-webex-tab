@@ -3,11 +3,22 @@ import * as Promise from 'bluebird';
 import { Properties } from '../properties';
 import { WebEx } from '../lib/WebEx';
 
+import { MeetingService } from '../models';
+
 export const webExController = (() => {
   let cntrler: any = {};
 
   cntrler.createInstance = function({ webExId, webExPassword }) {
     return new WebEx({ webExID: webExId, password: webExPassword });
+  };
+
+  cntrler.requestHandler = function(args) {
+    const { webex } = JSON.parse(JSON.stringify(args));
+    delete args.webex
+    return {
+      client: cntrler.createInstance(webex),
+      data: args
+    };
   };
 
   cntrler.authenticate = function(req: Request, res: Response) {
@@ -39,6 +50,17 @@ export const webExController = (() => {
       res.status(200).send(resp);
     });
   };
+
+  cntrler.deleteMeeting = function(req: Request, res: Response) {
+    const { client } = cntrler.requestHandler(req.body);
+    const { meetingKey } = req.params;
+    client.meetingsService
+      .delete(meetingKey)
+      .then((resp:any) => {
+        console.log(resp);
+        return res.send(resp);
+      });
+  }
 
   cntrler.createMeeting = function(req: Request, res: Response) {
     const { webex, meeting } = req.body;

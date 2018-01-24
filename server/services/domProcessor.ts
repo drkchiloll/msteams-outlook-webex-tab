@@ -34,6 +34,9 @@ export const processors = {
   },
 
   parseResult(domDoc: any) {
+    if(typeof domDoc === 'string') {
+      domDoc = new dom().parseFromString(domDoc)
+    }
     return domDoc.getElementsByTagNameNS(
       'http://www.webex.com/schemas/2002/06/service',
       'result'
@@ -56,18 +59,9 @@ export const processors = {
 
   parseAuthResponse(xml:string) {
     const doc = new dom().parseFromString(xml);
-    const result = doc.getElementsByTagNameNS(
-      'http://www.webex.com/schemas/2002/06/service',
-      'result'
-    )
+    const result = this.parseResult(doc);
     return new Promise((resolve, reject) => {
-      if(
-        result && result.length > 0
-      ) {
-        resolve({ authentication: result[0].textContent });
-      } else {
-        resolve('unknown error');
-      }
+      return resolve({ authentication: result });
     });
   }
 };

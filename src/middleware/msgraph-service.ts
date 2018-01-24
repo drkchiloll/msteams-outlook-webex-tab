@@ -154,6 +154,16 @@ export function graphServiceFactory(api: Api) {
     }]
   };
 
+  graph.handleSubscriptionDeletion = function(eventId, events) {
+    return Promise.reduce(Object.keys(events), (item, key, i) => {
+      return Promise.filter(events[key], (event:any) =>
+        event.id === eventId).then((result:any) => {
+          if(result.length > 0) item = result[0];
+          return item;
+        })
+    }, {}).then(({ webExMeetingKey }: any) => webExMeetingKey);
+  }
+
   return graph;
 }
 

@@ -186,6 +186,14 @@ export class Api {
     };
   }
 
+  webExDeleteMeeting(meetingKey) {
+    return this._axiosrequest({
+      path: `/api/webex-meeting/${meetingKey}`,
+      method: 'delete',
+      data: { webex: { ...this.webex } }
+    });
+  }
+
   webExAuthentication(webex:WebExAuth) {
     return this._axiosrequest({
       path: '/api/webex-auth', method: 'post', data: webex

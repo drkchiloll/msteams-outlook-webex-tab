@@ -135,17 +135,34 @@ export class App extends Component<App.Props, App.State> {
     this.api = new Api();
     this.api.initialize();
     socket.on('notification_received', (data: any) => {
-      this.getEvents().then(() => {
-        let { newMeetingBtnLabel, attendees } = this.state;
-        const newMeeting = this.api.msteamsResetObject;
-        newMeetingBtnLabel = 'Schedule Meeting';
-        attendees = [];
-        this.setState({
-          newMeeting,
-          attendees,
-          newMeetingBtnLabel
-        });
-      });
+      const { events } = this.state;
+      if(data && data.value && data.value.length === 1) {
+        const graphEvent: any = data.value[0];
+        if(graphEvent.changeType === 'deleted') {
+          const eventId = graphEvent.resourceData.id;
+          return this.api.graphService
+            .handleSubscriptionDeletion(eventId, events)
+            .then((meetingKey) => {
+              if(meetingKey) {
+                return this.api.webExDeleteMeeting(meetingKey);
+              } else {
+                return;
+              }
+            }).then(() => this.getEvents());
+        } else {
+          this.getEvents().then(() => {
+            let { newMeetingBtnLabel, attendees } = this.state;
+            const newMeeting = this.api.msteamsResetObject;
+            newMeetingBtnLabel = 'Schedule Meeting';
+            attendees = [];
+            this.setState({
+              newMeeting,
+              attendees,
+              newMeetingBtnLabel
+            });
+          });
+        }
+      }
     });
     microsoftTeams.initialize();
     apiEmitter.on('401', () => {

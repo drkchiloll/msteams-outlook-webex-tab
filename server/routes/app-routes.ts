@@ -21,6 +21,7 @@ router.post('/webex-meetnow', webExController.meetNow);
 
 router.route('/webex-meeting/:meetingKey')
   .get(webExController.getMeeting)
+  .delete(webExController.deleteMeeting)
 
 router.route('/webex-joinurl')
   .post(webExController.getJoinUrls)
