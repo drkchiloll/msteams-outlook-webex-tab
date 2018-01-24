@@ -1,7 +1,7 @@
-import { Properties } from '../properties';
+import { properties as Properties } from './properties';
 import * as Promise from 'bluebird';
 import { WebEx } from '../lib/WebEx';
-const { WebEx: { xsitype } } = Properties;
+const { webex: { xsitype } } = Properties;
 import { bodyBuilder, xsi, processors } from './index';
 import * as moment from 'moment';
 
