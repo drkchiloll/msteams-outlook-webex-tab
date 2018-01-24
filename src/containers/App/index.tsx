@@ -19,11 +19,11 @@ const {
   msApp: {
     clientId, authority, scopes,
     webApi, tenant, redirectUri,
-    headers, contentUrl
+    headers, contentUrl, baseUrl
   }
 } = Properties;
 
-const socket = openSocket(redirectUri);
+const socket = openSocket(baseUrl);
 
 import {
   RaisedButton, FontIcon, Drawer,
@@ -84,10 +84,15 @@ export class App extends Component<App.Props, App.State> {
         this.authActions({
           accessToken, signedInUser, context, fromEmitter
         }).then(() => {
-          // let subscriptionId = localStorage.getItem('subscriptionId');
           this.setState({ accessToken });
           if(this.state.webex.webExId) {
             return this.getEvents();
+          } else {
+            return;
+          }
+        }).then(() => {
+          if(!this.api.graphService.verifySubscription()) {
+            return this.api.graphService.createSubscription();
           }
         })
       },
@@ -130,12 +135,15 @@ export class App extends Component<App.Props, App.State> {
     this.api = new Api();
     this.api.initialize();
     socket.on('notification_received', (data: any) => {
-      let { newMeeting } = this.state;
       this.getEvents().then(() => {
-        newMeeting.newEvent = false;
+        let { newMeetingBtnLabel, attendees } = this.state;
+        const newMeeting = this.api.msteamsResetObject;
+        newMeetingBtnLabel = 'Schedule Meeting';
+        attendees = [];
         this.setState({
           newMeeting,
-          newMeetingBtnLabel: 'Schedule Meeting'
+          attendees,
+          newMeetingBtnLabel
         });
       });
     });
@@ -185,7 +193,12 @@ export class App extends Component<App.Props, App.State> {
             this.callTeams();
           } else {
             if(this.api.webex.webExId || this.api.webex.webExPassword) {
-              return this.getEvents();
+              return this.getEvents()
+                .then(() => {
+                  if(!this.api.graphService.verifySubscription()) {
+                    return this.api.graphService.createSubscription();
+                  }
+                })
             }
           }
         })
@@ -195,11 +208,7 @@ export class App extends Component<App.Props, App.State> {
       else {
         this.clientApplication
           .loginPopup(scopes)
-          .then((value) => {
-            microsoftTeams.getContext((context:any) => {
-              console.log(context);
-            })
-          })
+          .then((value) => {})
       }
     }
   }
@@ -390,20 +399,6 @@ export class App extends Component<App.Props, App.State> {
   }
 
   @autobind
-  createWebExMeeting() {
-    let {
-      webex: {webExId, webExPassword},
-      attendees,
-      newMeeting
-    } = this.state;
-    const webExEvent: any = {
-      webExId, webExPassword,
-      subject: newMeeting.title || 'Meet Now Conference',
-      attendees
-    };
-  }
-
-  @autobind
   createMeeting() {
     this.setState({ newMeetingBtnLabel: null });
     let { newMeeting, attendees } = this.state;
@@ -422,18 +417,7 @@ export class App extends Component<App.Props, App.State> {
           content: meetingKey
         };
         return this.api.msteamsCreateMeeting(outlookEvent);
-      }).then(() => {
-        let { newMeetingBtnLabel, attendees } = this.state;
-        const newMeeting = this.api.msteamsResetObject;
-        newMeetingBtnLabel = 'Schedule Meeting';
-        attendees = [];
-        this.setState({
-          newMeeting,
-          attendees,
-          newMeetingBtnLabel
-        });
-        return this.getEvents();
-      })
+      });
   }
 
   @autobind

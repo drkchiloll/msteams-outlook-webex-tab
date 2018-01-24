@@ -18,7 +18,7 @@ const {
   msApp: {
     clientId, authority, scopes,
     webApi, tenant, redirectUri,
-    teamsUrl, contentUrl
+    teamsUrl, contentUrl, baseUrl
   }
 } = Properties;
 
@@ -71,6 +71,7 @@ export class Api {
   signedInUserEmail: string;
   channelId: string;
   webex: WebExAuth;
+  subscription: any;
   teamGroupId: string;
   graphService: any;
   constructor() {}
@@ -98,6 +99,9 @@ export class Api {
       this.signedInUserEmail = null;
       this.teamGroupId = null;
     }
+    try { this.subscription = JSON.parse(localStorage.getItem('subscription')) }
+    catch(e) { this.subscription = null; }
+
     this.graphService = graphServiceFactory(this);
   }
 
@@ -115,6 +119,10 @@ export class Api {
     localStorage.setItem('msTeamsContext', JSON.stringify(msTeamsContext));
     this.signedInUserEmail = msTeamsContext.upn;
     this.teamGroupId = msTeamsContext.groupId;
+  }
+
+  setSubscription(subscription) {
+    localStorage.setItem('subscription', JSON.stringify(subscription));
   }
 
   private _axiosoptions(opts:any): AxiosRequestConfig {
@@ -319,23 +327,6 @@ export class Api {
         });
       });
     }).then(() => events);
-  }
-
-  private _constructWebHookBody = {
-    changeType: 'created,updated,deleted',
-    notificationUrl: 'https://msteams-webex.ngrok.io/api/webhook',
-    resource: 'me/events',
-    clientState: 'subscription-identifier',
-    expirationDateTime: moment().add('1', 'days').utc().format()
-  }
-
-  msteamsCreateWebHook() {
-    return this._axiosrequest({
-      path: '/api/subscriptions',
-      method: 'post',
-      data: this._constructWebHookBody,
-      params: { token: this.token }
-    });
   }
 
   msteamsOutlookTimeFinder({ token, user }) {}

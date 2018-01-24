@@ -1,4 +1,5 @@
 import axios from 'axios';
+import * as moment from 'moment';
 
 import {
   AxiosInstance,
@@ -9,7 +10,7 @@ import { stringify } from 'querystring';
 import * as Promise from 'bluebird';
 import * as properties from '../../properties.json';
 const { msApp: {
-  uri, webApi, connectorUrl, teamsUrl, clientId, contentUrl
+  uri, webApi, connectorUrl, teamsUrl, clientId, contentUrl, baseUrl
 } } = properties;
 
 import { Api } from './index';
@@ -20,7 +21,7 @@ export function graphServiceFactory(api: Api) {
 
   const graphBeta = axios.create({ baseURL: uri });
   graphBeta.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
-  graphBeta.defaults.validateStatus = statusFn(status);
+  graphBeta.defaults.validateStatus = (status) => status >= 200 && status <= 500
   const graphApi = axios.create({ baseURL: webApi });
   graphApi.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
   graphApi.defaults.validateStatus = (status) =>
@@ -106,6 +107,34 @@ export function graphServiceFactory(api: Api) {
       path: '/beta/users',
       params: { ...Object.assign(this.userParams(), this.userFilter(query)) }
     });
+  };
+
+  graph.verifySubscription = function(): boolean {
+    return !api.subscription ? false :
+      moment().utc().isAfter(moment(api.subscription.expirateDateTime))
+      ? false : true;
+  }
+
+  graph.createSubscription = function() {
+    const subscription = {
+      changeType: 'created,updated,deleted',
+      notificationUrl: `${baseUrl}/api/webhook`,
+      resource: 'me/events',
+      clientState: 'subscription-identifier',
+      expirationDateTime: moment().add('1', 'days').utc().format()
+    };
+    return axiosrequest(graphApi, {
+      path: '/subscriptions',
+      method: 'post',
+      data: subscription
+    }).then((subscription) => {
+      if(subscription) {
+        api.setSubscription(subscription);
+        return true;
+      } else {
+        return false;
+      }
+    })
   };
 
   graph.teamsDeepLinkBuilder = function(subEntityId) {
