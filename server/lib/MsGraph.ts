@@ -1,4 +1,5 @@
 import * as request from 'request';
+import axios from 'axios';
 import * as Primise from 'bluebird';
 import {
   outlookServFactory,
@@ -13,6 +14,10 @@ import { properties as Properties } from '../services';
 const { msApp: {
   uri, connectorUrl
 }} = Properties;
+
+const graphrequest = axios.create({
+  baseURL: uri
+})
 
 export interface UserService {
   get(any): Promise<any>;
@@ -32,6 +37,7 @@ export class MsGraph {
     this.outlookService = outlookServFactory(this);
     this.userService = o365UserServFactory(this);
     this.msTeamsService = MsTeamsServiceFactory(this);
+    graphrequest.defaults.headers.common['Authorization'] = token;
   }
 
   connectorRequest(card) {
@@ -41,6 +47,33 @@ export class MsGraph {
         json: true, body: card
       }, (err, resp, body) => resolve(body));
     })
+  };
+
+  private _axiosoptions({ path, method='get', body={} }) {
+    let options:any = {
+      url: path,
+      method
+    };
+    if(method === 'post') options.data = body;
+    if(path.includes('photo')) options.responseType = 'arraybuffer';
+    return options;
+  }
+
+  _axiosrequest(options) {
+    return graphrequest.request(
+      this._axiosoptions(options)
+    ).then((resp:any) => {
+      if(resp) {
+        if(resp.status === 404) return null;
+        else if(resp.status === 401) return { status: resp.status };
+        else if(options.path.includes('photo')) {
+          return resp;
+        }
+        else return resp.data;
+      } else {
+        return null;
+      }
+    }).catch(() => null);
   };
 
   private _options({path,method='get',body={}}: any) {
@@ -55,7 +88,7 @@ export class MsGraph {
     return options;
   }
 
-  _request({body, method, path}) {
+  _request({body={}, method='get', path}) {
     const reqOptions = this._options({ body, path, method });
     // console.log(reqOptions);
     return new Promise((resolve, reject) => {
