@@ -12,7 +12,6 @@ export class Participant extends React.Component<any,any> {
     let { user } = this.props;
     if(user.photo) {
       let img = `data:image/jpeg;base64,${new Buffer(user.photo, 'binary').toString('base64')}`;
-      // user.photo = img;
       user.photo = <Avatar src={img} />;
     } else {
       user.photo = (
@@ -24,22 +23,21 @@ export class Participant extends React.Component<any,any> {
     }
     return (
       <Row>
-        <Col xs={8}>
+        <Col xs={12}>
           <Paper style={{
             position: 'relative',
-            margin: '0 5px 10px 1px',
-            width: 255
+            margin: '5px 5px 5px 1px',
+            width: 265
           }}>
-            {/* <div style={{ margin: '0 5px 5px 5px' }}> */}
               <ListItem
                 disabled={true}
                 leftAvatar={user.photo}
+                innerDivStyle={{marginBottom: '2px'}}
                 primaryText={user.displayName}
                 secondaryText={
-                  <p style={{fontSize:'70%'}}>{user.mail}</p>
+                  <strong style={{fontSize:'75%'}}>{user.mail}</strong>
                 }
               />
-            {/* </div> */}
             <IconButton
               style={{
                 display: user.me ? 'none' : 'inline-block',

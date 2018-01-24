@@ -278,6 +278,8 @@ export class App extends Component<App.Props, App.State> {
         <Dialog
           title='Schedule New Meeting'
           modal={false}
+          autoDetectWindowHeight={true}
+          autoScrollBodyContent={true}
           open={this.state.newMeeting.newEvent}
           style={{
             position: 'relative', maxWidth: 'none', top: 0
@@ -317,7 +319,7 @@ export class App extends Component<App.Props, App.State> {
                       :
                       <div></div>
                   }
-                  <Menu maxHeight={400} >
+                  <Menu maxHeight={290} >
                     <Subheader>Participants</Subheader>
                     {
                       attendees.length > 0 ?
@@ -514,13 +516,6 @@ export class App extends Component<App.Props, App.State> {
   @autobind
   closeWebExSettings() {
     this.setState({ webExSettingsEditor: false });
-  }
-
-  @autobind
-  createWebHook() {
-    return this.api
-      .msteamsCreateWebHook()
-      .then((subscription) => console.log(subscription));
   }
 
   @autobind

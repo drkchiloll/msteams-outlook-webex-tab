@@ -57,12 +57,13 @@ export class UserSearch extends React.Component<any,any> {
           text: searchText,
           value: (
             <MenuItem key={user.id}
-              innerDivStyle={{margin: "0 0 0 10px", padding:0, lineHeight: 1}}
+              innerDivStyle={{position: 'relative', top: 10, lineHeight: 0.95}}
               primaryText={
                 <div>{user.displayName}<br/>
                   <em style={{
                     display:
-                      user.displayName.includes('matches') || !user.mail ? 'none' : 'inline-block'
+                      user.displayName.includes('matches') || !user.mail ? 'none' : 'inline-block',
+                      marginBottom: '1px'
                   }}>
                     {user.mail}
                   </em>
