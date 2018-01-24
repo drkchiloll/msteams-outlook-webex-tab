@@ -41,7 +41,7 @@ export class JoinWebEx extends React.Component<any,any> {
   render() {
     return (
       <FlatButton label='JOIN WEBEX'
-        style={{margineLeft: 500}}
+        style={{margineLeft: 500, display: 'none'}}
         labelPosition='after'
         icon={<i className='mdi mdi-cisco-webex mdi-24px' />} />
     )
