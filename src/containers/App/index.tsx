@@ -100,13 +100,12 @@ export class App extends Component<App.Props, App.State> {
         }).then(() => {
           this.setState({ accessToken });
           if(this.state.webex.webExId) {
-            return this.getEvents();
-          } else {
-            return;
+            this.getEvents();
           }
-        }).then(() => {
           if(!this.api.graphService.verifySubscription()) {
             return this.api.graphService.createSubscription();
+          } else {
+            return;
           }
         })
       },
@@ -159,7 +158,7 @@ export class App extends Component<App.Props, App.State> {
           .handleSubscriptionDeletion(eventId, events)
           .then((event) => {
             matchedEvent = event;
-            if(matchedEvent.webExMeetingKey) {
+            if(matchedEvent.webExMeetingKey && matchedEvent.isOrganizer) {
               return this.api.webExDeleteMeeting(matchedEvent.webExMeetingKey);
             } else {
               return;
@@ -202,7 +201,21 @@ export class App extends Component<App.Props, App.State> {
     setTimeout(() => {
       this.setState({ choiceDialog: false });
       this.credCheck();
-    }, 1500)
+    }, 1500);
+    apiEmitter.on('newevent', ({ prop, event }) => {
+      let { events } = this.state;
+      if(event.isCancelled) {
+        this.api.graphService.deleteEvent(event.id);
+      }
+      if(!events[prop].find(({ id }) => id === event.id)) {
+        events[prop].push(event);
+        events[prop].sort((a: any, b: any) => {
+          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        });
+        const evtHtml = this._renderEvents(events);
+        this.setState({ events, evtHtml });
+      }
+    });
   }
 
   @autobind
@@ -225,14 +238,15 @@ export class App extends Component<App.Props, App.State> {
           if(resp && resp.status) {
             this.callTeams();
           } else {
-            if(this.api.webex.webExId || this.api.webex.webExPassword) {
-              return this.getEvents()
-                .then(() => {
-                  if(!this.api.graphService.verifySubscription()) {
-                    return this.api.graphService.createSubscription();
-                  }
-                })
+            if(!this.api.graphService.verifySubscription()) {
+              return this.api.graphService.createSubscription();
+            } else {
+              return;
             }
+          }
+        }).then(() => {
+          if(this.api.webex.webExId || this.api.webex.webExPassword) {
+            return this.getEvents()
           }
         })
     } else {
@@ -468,18 +482,7 @@ export class App extends Component<App.Props, App.State> {
 
   @autobind
   getEvents() {
-    let { events } = this.state;
-    apiEmitter.on('newevent', ({ prop, event }) => {
-      if(!events[prop].find(({id}) => id === event.id)) {
-        events[prop].push(event);
-        events[prop].sort((a:any,b:any) => {
-          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        });
-        const evtHtml = this._renderEvents(events);
-        this.setState({ events, evtHtml });
-      }
-    });
-    return this.api.graphService.getEvents();
+    this.api.graphService.getEvents();    
   }
 
   @autobind

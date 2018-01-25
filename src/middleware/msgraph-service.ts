@@ -15,8 +15,6 @@ const { msApp: {
 import { Api, apiEmitter } from './index';
 
 export function graphServiceFactory(api: Api) {
-  const statusFn = (status) =>
-    (status) => status >= 200 && status <= 500;
   const graphBeta = axios.create({ baseURL: uri });
   graphBeta.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
   graphBeta.defaults.validateStatus = (status) => status >= 200 && status <= 500
@@ -26,7 +24,7 @@ export function graphServiceFactory(api: Api) {
     status >= 200 && status <= 500
 
   const _errors = (status) => {
-    // alert(status);
+    alert(status);
     let resolver:any;
     switch(status) {
       case 401:
@@ -41,7 +39,7 @@ export function graphServiceFactory(api: Api) {
 
   const _options = ({path, method='get', data={}, params={}}) => {
     let options:any = { url: path, method };
-    if(method==='post') options['data'] = data;
+    if(method==='post' || method==='delete') options['data'] = data;
     if(Object.keys(params).length > 0) options['params'] = params;
     return options;
   };
@@ -52,7 +50,7 @@ export function graphServiceFactory(api: Api) {
   graph._axiosrequest = function(requestor: AxiosInstance, options) {
     let requestoptions: any = _options(options);
     if(options.path.includes('photo')) requestoptions['responseType'] = 'arraybuffer';
-    if(options.path.includes('/beta/me/events')) {
+    if(options.path === '/beta/me/events') {
       const transformRequest = (data, headers) => {
         headers.common['Prefer'] = 'outlook.timezone="'+
           this.convertZones[momenttz.tz(momenttz.tz.guess()).format('z')]+'"';
@@ -119,10 +117,14 @@ export function graphServiceFactory(api: Api) {
   };
 
   graph.verifySubscription = function(): boolean {
+    let expiryDate:any;
+    if(api.subscription) {
+      expiryDate = moment(api.subscription.expirationDateTime).format();
+    }
     return !api.subscription ? false :
-      moment().utc().isAfter(moment(api.subscription.expirateDateTime))
+      moment().utc().isAfter(moment(expiryDate))
       ? false : true;
-  };
+  };  
 
   graph.createSubscription = function() {
     const subscription = {
@@ -130,13 +132,14 @@ export function graphServiceFactory(api: Api) {
       notificationUrl: `${baseUrl}/api/webhook`,
       resource: 'me/events',
       clientState: 'subscription-identifier',
-      expirationDateTime: moment().add('1', 'days').utc().format()
+      expirationDateTime: moment().add(1, 'days').utc().format()
     };
-    return this.axiosrequest(graphApi, {
+    return this._axiosrequest(graphApi, {
       path: '/subscriptions',
       method: 'post',
       data: subscription
     }).then((subscription) => {
+      alert(JSON.stringify(subscription));
       if(subscription) {
         api.setSubscription(subscription);
         return true;
@@ -177,6 +180,10 @@ export function graphServiceFactory(api: Api) {
     })
   };
 
+  graph.eventPropertyFilter = () =>
+    'id,subject,bodyPreview,isOrganizer,isCancelled,'+
+    'start,end,organizer,attendees'
+
   graph.getEvents = function() {
     const eventDateFilter = moment()
       .startOf('day')
@@ -189,15 +196,15 @@ export function graphServiceFactory(api: Api) {
       params: {
         filter: `start/dateTime ge '${eventDateFilter}'`,
         orderby: 'end/dateTime',
-        select: 'id,subject,bodyPreview,isOrganizer,isCancelled,start,end,organizer,attendees'
+        select: this.eventPropertyFilter()
       }
     }).then(({value}) => {
       if(value && value.length > 0) {
-        return Promise.map(value, (event: any) => {
+        return Promise.map(value, (event:any) => {
           const {
             id, subject, bodyPreview,
-            isOrganizer, isCancelled,
-            start, end, organizer, attendees
+              isOrganizer, isCancelled,
+              start, end, organizer, attendees
           } = event;
           let outlookEvent: any = {
             id, subject,
@@ -214,18 +221,7 @@ export function graphServiceFactory(api: Api) {
               }))
             })()
           };
-          const prop = (() => {
-            if(moment().isSame(moment(start.dateTime), 'day')) {
-              return 'Today';
-            } else if(moment().add(1, 'days').isSame(moment(start.dateTime), 'day')) {
-              return 'Tomorrow';
-            } else {
-              let prop = Object.keys(time.uidates()).find(day =>
-                day === moment(start.dateTime).format(time.calformat))
-              if(!prop) return 'Other';
-              else return prop;
-            }
-          })();
+          const prop = time.findEventProp(start.dateTime);
           if(bodyPreview) {
             api.webExGetJoinUrl({
               meetingKey: bodyPreview,
@@ -249,6 +245,13 @@ export function graphServiceFactory(api: Api) {
       }
     });
   };
+
+  graph.deleteEvent = function(id) {
+    return this._axiosrequest(graphBeta, {
+      path: `/beta/me/events/${id}`,
+      method: 'delete'
+    })
+  }
 
   graph.convertZones = {
     EST: 'Eastern Standard Time',

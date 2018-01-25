@@ -24,3 +24,12 @@ time.uidates = function() {
     return item;
   }, {Today:[],Tomorrow:[]});
 };
+
+time.findEventProp = function(date:string) {
+  const theDay = moment(date).format(this.uiformat),
+        theDays = Object.keys(this.uidates());
+  return theDays.indexOf(theDay) !== -1 ? theDay :
+    moment().isSame(moment(date),'day') ? 'Today' :
+    moment().add(1,'days').isSame(moment(date),'day') ? 'Tomorrow' :
+    'Other';
+};
