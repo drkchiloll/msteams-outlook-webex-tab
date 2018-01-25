@@ -24,7 +24,7 @@ export function graphServiceFactory(api: Api) {
     status >= 200 && status <= 500
 
   const _errors = (status) => {
-    alert(status);
+    // alert(status);
     let resolver:any;
     switch(status) {
       case 401:
@@ -139,7 +139,7 @@ export function graphServiceFactory(api: Api) {
       method: 'post',
       data: subscription
     }).then((subscription) => {
-      alert(JSON.stringify(subscription));
+      // alert(JSON.stringify(subscription));
       if(subscription) {
         api.setSubscription(subscription);
         return true;
