@@ -1,24 +1,22 @@
 import axios from 'axios';
 import * as moment from 'moment';
-
+import * as momenttz from 'moment-timezone';
+import { time } from './time-helper';
 import {
   AxiosInstance,
   AxiosRequestConfig
 } from 'axios';
-
-import { stringify } from 'querystring';
 import * as Promise from 'bluebird';
 import * as properties from '../../properties.json';
 const { msApp: {
   uri, webApi, connectorUrl, teamsUrl, clientId, contentUrl, baseUrl
 } } = properties;
 
-import { Api } from './index';
+import { Api, apiEmitter } from './index';
 
 export function graphServiceFactory(api: Api) {
   const statusFn = (status) =>
     (status) => status >= 200 && status <= 500;
-
   const graphBeta = axios.create({ baseURL: uri });
   graphBeta.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
   graphBeta.defaults.validateStatus = (status) => status >= 200 && status <= 500
@@ -28,6 +26,7 @@ export function graphServiceFactory(api: Api) {
     status >= 200 && status <= 500
 
   const _errors = (status) => {
+    // alert(status);
     let resolver:any;
     switch(status) {
       case 401:
@@ -47,17 +46,27 @@ export function graphServiceFactory(api: Api) {
     return options;
   };
 
-  const axiosrequest = (requestor: AxiosInstance, options) => {
-    let requestoptions:any = _options(options);
+
+  const graph: any = {};
+
+  graph._axiosrequest = function(requestor: AxiosInstance, options) {
+    let requestoptions: any = _options(options);
     if(options.path.includes('photo')) requestoptions['responseType'] = 'arraybuffer';
-    return requestor.request(requestoptions)
-      .then((resp:any) => {
+    if(options.path.includes('/beta/me/events')) {
+      const transformRequest = (data, headers) => {
+        headers.common['Prefer'] = 'outlook.timezone="'+
+          this.convertZones[momenttz.tz(momenttz.tz.guess()).format('z')]+'"';
+        return data || {};
+      };
+      requestoptions['transformRequest'] = transformRequest;
+    }
+    return requestor
+      .request(requestoptions)
+      .then((resp: any) => {
         if(resp.status >= 400) return _errors(resp.status);
         else return resp.data;
       })
   };
-
-  const graph: any = {};
 
   graph.userParams = () => ({ select: 'id,displayName,mail'});
 
@@ -66,13 +75,13 @@ export function graphServiceFactory(api: Api) {
   })
 
   graph.getMe = function() {
-    return axiosrequest(graphBeta, {
+    return this._axiosrequest(graphBeta, {
       path: '/beta/me', params: this.userParams()
     });
   };
 
   graph.getUserPhoto = function(id) {
-    return axiosrequest(graphApi, {
+    return this._axiosrequest(graphApi, {
       path: `/users/${id}/photo/$value`
     }).then((resp:any) => {
       if(resp) return Buffer.from(resp, 'binary');
@@ -82,7 +91,7 @@ export function graphServiceFactory(api: Api) {
 
   graph.getTeam = function() {
     if(!api.token && !api.signedInUser && !api.teamGroupId) api.initialize();
-    return axiosrequest(graphBeta, {
+    return this._axiosrequest(graphBeta, {
       path: `/beta/groups/${api.teamGroupId}/members`,
       params: this.userParams()
     }).then((resp) => {
@@ -103,7 +112,7 @@ export function graphServiceFactory(api: Api) {
   };
 
   graph.getUsersWithQuery = function(query) {
-    return axiosrequest(graphBeta, {
+    return this._axiosrequest(graphBeta, {
       path: '/beta/users',
       params: { ...Object.assign(this.userParams(), this.userFilter(query)) }
     });
@@ -113,7 +122,7 @@ export function graphServiceFactory(api: Api) {
     return !api.subscription ? false :
       moment().utc().isAfter(moment(api.subscription.expirateDateTime))
       ? false : true;
-  }
+  };
 
   graph.createSubscription = function() {
     const subscription = {
@@ -123,7 +132,7 @@ export function graphServiceFactory(api: Api) {
       clientState: 'subscription-identifier',
       expirationDateTime: moment().add('1', 'days').utc().format()
     };
-    return axiosrequest(graphApi, {
+    return this.axiosrequest(graphApi, {
       path: '/subscriptions',
       method: 'post',
       data: subscription
@@ -155,14 +164,102 @@ export function graphServiceFactory(api: Api) {
   };
 
   graph.handleSubscriptionDeletion = function(eventId, events) {
-    return Promise.reduce(Object.keys(events), (item, key, i) => {
-      return Promise.filter(events[key], (event:any) =>
-        event.id === eventId).then((result:any) => {
-          if(result.length > 0) item = result[0];
-          return item;
-        })
-    }, {}).then(({ webExMeetingKey }: any) => webExMeetingKey);
-  }
+    let event: any;
+    Object.keys(events).forEach(key => {
+      if(events[key].find(evt => evt.id == eventId)) {
+        event = events[key].find(evt => evt.id==eventId);
+        event['prop'] = key;
+        event['index'] = events[key].findIndex(evt => evt.id==eventId);
+      }
+    });
+    return new Promise((resolve, reject) => {
+      resolve(event);
+    })
+  };
+
+  graph.getEvents = function() {
+    const eventDateFilter = moment()
+      .startOf('day')
+      .subtract(1,'days')
+      .format('YYYY-MM-DDTHH:mm:ss');
+    let events: any = time.uidates();
+    return this._axiosrequest(graphBeta, {
+      path: '/beta/me/events',
+      method: 'get',
+      params: {
+        filter: `start/dateTime ge '${eventDateFilter}'`,
+        orderby: 'end/dateTime',
+        select: 'id,subject,bodyPreview,isOrganizer,isCancelled,start,end,organizer,attendees'
+      }
+    }).then(({value}) => {
+      if(value && value.length > 0) {
+        return Promise.map(value, (event: any) => {
+          const {
+            id, subject, bodyPreview,
+            isOrganizer, isCancelled,
+            start, end, organizer, attendees
+          } = event;
+          let outlookEvent: any = {
+            id, subject,
+            isOrganizer, isCancelled,
+            webExMeetingKey: bodyPreview || '',
+            startDate: moment(start.dateTime).format(time.calformat),
+            endDate: moment(end.dateTime).format(time.calformat),
+            attendees: (() => {
+              return attendees.map(attendee => ({
+                name: attendee.emailAddress.name || '',
+                emailAddress: attendee.emailAddress.address,
+                status: attendee.status.response,
+                type: attendee.type
+              }))
+            })()
+          };
+          const prop = (() => {
+            if(moment().isSame(moment(start.dateTime), 'day')) {
+              return 'Today';
+            } else if(moment().add(1, 'days').isSame(moment(start.dateTime), 'day')) {
+              return 'Tomorrow';
+            } else {
+              let prop = Object.keys(time.uidates()).find(day =>
+                day === moment(start.dateTime).format(time.calformat))
+              if(!prop) return 'Other';
+              else return prop;
+            }
+          })();
+          if(bodyPreview) {
+            api.webExGetJoinUrl({
+              meetingKey: bodyPreview,
+              host: isOrganizer,
+              attendee: {
+                displayName: api.signedInUser, mail: api.signedInUserEmail
+              }
+            }).then(({joinUrl}) => {
+              outlookEvent['joinUrl'] = joinUrl;
+              apiEmitter.emit('newevent', {
+                prop, event: outlookEvent
+              });
+            })
+          } else {
+            apiEmitter.emit('newevent', {
+              prop, event: outlookEvent
+            });
+          }
+          return;
+        });
+      }
+    });
+  };
+
+  graph.convertZones = {
+    EST: 'Eastern Standard Time',
+    EDT: 'Eastern Daylight Time',
+    CST: 'Central Standard Time',
+    CDT: 'Central Daylight Time',
+    MST: 'Mountain Standard Time',
+    MDT: 'Mountain Daylight Time',
+    PST: 'Pacific Standard Time',
+    PDT: 'Pacific Daylight Time'
+  };
 
   return graph;
 }

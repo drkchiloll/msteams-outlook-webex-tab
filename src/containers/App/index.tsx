@@ -8,11 +8,10 @@ import { UserAgentApplication } from 'msalx';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 import * as openSocket from 'socket.io-client';
-import * as Properties from '../../../properties.json'
-
+import * as Properties from '../../../properties.json';
 
 import {
-  Api, WebExAuth, apiEmitter
+  Api, WebExAuth, apiEmitter, time
 } from '../../middleware';
 
 const {
@@ -63,6 +62,21 @@ import {
   WebExMeetNowDialog, UserSearch, Participant
 } from '../../components';
 
+const initalState = {
+  newMeeting: {
+    title: '',
+    newEvent: false,
+    location: '',
+    startDate: new Date(),
+    endDate: new Date(),
+    startTime: '',
+    endTime: '',
+    start: { dateTime: '', timeZone: '' },
+    end: { dateTime: '', timeZone: '' }
+  },
+  attendees: []
+};
+
 export class App extends Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
     clientId, authority,
@@ -107,8 +121,8 @@ export class App extends Component<App.Props, App.State> {
     this.state = {
       accessToken: null,
       webExSettingsEditor: false,
-      evtHtml: <div></div>,
-      events: null,
+      evtHtml: this._renderEvents(time.uidates()),
+      events: time.uidates(),
       newMeeting: {
         title: '',
         newEvent: false,
@@ -135,33 +149,35 @@ export class App extends Component<App.Props, App.State> {
     this.api = new Api();
     this.api.initialize();
     socket.on('notification_received', (data: any) => {
-      const { events } = this.state;
-      if(data && data.value && data.value.length === 1) {
-        const graphEvent: any = data.value[0];
-        if(graphEvent.changeType === 'deleted') {
-          const eventId = graphEvent.resourceData.id;
-          return this.api.graphService
-            .handleSubscriptionDeletion(eventId, events)
-            .then((meetingKey) => {
-              if(meetingKey) {
-                return this.api.webExDeleteMeeting(meetingKey);
-              } else {
-                return;
-              }
-            }).then(() => this.getEvents());
-        } else {
-          this.getEvents().then(() => {
-            let { newMeetingBtnLabel, attendees } = this.state;
-            const newMeeting = this.api.msteamsResetObject;
-            newMeetingBtnLabel = 'Schedule Meeting';
-            attendees = [];
-            this.setState({
-              newMeeting,
-              attendees,
-              newMeetingBtnLabel
-            });
+      let { events } = this.state;
+      const graphDelete = data.value.find(change => change.changeType==='deleted');
+      let matchedEvent: any;
+      if(graphDelete) {
+        const eventId = graphDelete.resourceData.id;
+        // This Cancels the WebEx Meeting
+        return this.api.graphService
+          .handleSubscriptionDeletion(eventId, events)
+          .then((event) => {
+            matchedEvent = event;
+            if(matchedEvent.webExMeetingKey) {
+              return this.api.webExDeleteMeeting(matchedEvent.webExMeetingKey);
+            } else {
+              return;
+            }
+          }).then(() => {
+            events[matchedEvent.prop].splice(matchedEvent.index, 1);
+            let evtHtml = this._renderEvents(events);
+            this.setState({ events, evtHtml });
           });
-        }
+      } else {
+        let { newMeetingBtnLabel } = this.state;
+        newMeetingBtnLabel = 'Schedule Meeting';
+        this.setState({
+          newMeeting: initalState.newMeeting,
+          attendees: initalState.attendees,
+          newMeetingBtnLabel
+        });
+        this.getEvents();
       }
     });
     microsoftTeams.initialize();
@@ -452,16 +468,18 @@ export class App extends Component<App.Props, App.State> {
 
   @autobind
   getEvents() {
-    let { accessToken } = this.state;
-    return this.api
-      .msteamsGetOutlookEvents({ token: accessToken })
-      .then((events) => {
-        if(events) return this.api.msteamsEventsProcessing(events);
-        else this.callTeams();
-      }).then((events) => {
-        let evtHtml = this._renderEvents(events);
+    let { events } = this.state;
+    apiEmitter.on('newevent', ({ prop, event }) => {
+      if(!events[prop].find(({id}) => id === event.id)) {
+        events[prop].push(event);
+        events[prop].sort((a:any,b:any) => {
+          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        });
+        const evtHtml = this._renderEvents(events);
         this.setState({ events, evtHtml });
-      });
+      }
+    });
+    return this.api.graphService.getEvents();
   }
 
   @autobind
