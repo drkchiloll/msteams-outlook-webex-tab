@@ -4,6 +4,8 @@ import autobind from 'autobind-decorator';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 
+import { time } from '../../middleware';
+
 import {
   RaisedButton, FontIcon, TextField,
   DatePicker, MenuItem, SelectField,
@@ -31,10 +33,10 @@ export class EventDates extends React.Component<any, any> {
 
   @autobind
   durationChangeHandler(e:any, index: number, value: string) {
-    let { startTime, api } = this.props,
+    let { startTime } = this.props,
         dateFormat = 'YYYY-MM-DD',
         startDate = moment().format(dateFormat);
-    const formattedDate = moment(api._formatTime(startDate, startTime));
+    const formattedDate = moment(time.formatTime(startDate, startTime));
     this.durationValue = value;
     if(value === '1 hour') value = '1 hours';
     if(value === '1.5 hours') value = '90 minutes';
@@ -69,10 +71,10 @@ export class EventDates extends React.Component<any, any> {
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date });
                     this.props.inputChange(
-                      'startDate', api._dateFormatter(date)
+                      'startDate', time.dateFormatter(date)
                     );
                     this.props.inputChange(
-                      'endDate', api._dateFormatter(date)
+                      'endDate', time.dateFormatter(date)
                     )
                   }} />
               </Col>
@@ -116,7 +118,7 @@ export class EventDates extends React.Component<any, any> {
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date })
                     this.props.inputChange(
-                      'endDate', api._dateFormatter(date)
+                      'endDate', time.dateFormatter(date)
                     );
                   }} />
               </Col>
