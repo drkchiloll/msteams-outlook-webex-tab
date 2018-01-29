@@ -142,50 +142,6 @@ export class Api {
     ).then((resp: AxiosResponse<any>) => resp.data);
   }
 
-  _dateFormatter(date: Date): string {
-    return momenttz.utc(date).tz(momenttz.tz.guess()).format('YYYY-MM-DD');
-  }
-
-  _formatTime(date: string, time:string) {
-    if(time.split(' ')[1] === 'am') {
-      switch(time.split(':')[0]) {
-        case '12':
-          return date + 'T' + '00:' + time.split(':')[1].split(' ')[0];
-        case '11':
-        case '10':
-          return date + 'T' + time.split(' ')[0];
-        default:
-          return date + 'T' + '0' + time.split(' ')[0];
-      }
-    } else {
-      switch(time.split(':')[0]) {
-        case '12':
-          return date + 'T' + time.split(' ')[0];
-        default:
-          return date + 'T' + (parseInt(time.split(':')[0], 10) + 12) +
-            ':' + time.split(':')[1].split(' ')[0];
-      }
-    }
-  }
-
-  private _normalizeDates(dates:any) {
-    let start = moment(dates.startDate).format('YYYY-MM-DD'),
-        end = moment(dates.endDate).format('YYYY-MM-DD'),
-        timeZone = momenttz.tz.guess();
-    return {
-      start: {
-        dateTime: moment(this._formatTime(start, dates.startTime))
-          .format('YYYY-MM-DDTHH:mm:ss'),
-        timeZone: momenttz.tz(timeZone).format('z')
-      },
-      end: {
-        dateTime: moment(this._formatTime(end, dates.endTime))
-          .format('YYYY-MM-DDTHH:mm:ss'),
-        timeZone: momenttz.tz(timeZone).format('z')
-      }
-    };
-  }
-
   webExDeleteMeeting(meetingKey) {
     return this._axiosrequest({
       path: `/api/webex-meeting/${meetingKey}`,
@@ -283,23 +239,6 @@ export class Api {
     endDate: new Date(),
     endTime: '',
   };
-
-  msteamsEventsProcessing(evts) {
-    const events = evts;
-    return Promise.map(Object.keys(events), (key:string) => {
-      return Promise.map(events[key], (evt:any, i: any) => {
-        if(!evt.webExMeetingKey) return;
-        return this.webExGetJoinUrl({
-          meetingKey: evt.webExMeetingKey,
-          host: evt.isOrganizer,
-          attendee: { displayName: this.signedInUser, mail: this.signedInUserEmail },
-        }).then(({joinUrl}) => {
-          events[key][i]['joinUrl'] = joinUrl;
-          return evt;
-        });
-      });
-    }).then(() => events);
-  }
 
   msteamsOutlookTimeFinder({ token, user }) {}
 
