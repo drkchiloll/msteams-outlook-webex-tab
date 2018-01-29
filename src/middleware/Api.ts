@@ -226,30 +226,6 @@ export class Api {
     });
   }
 
-  msteamsGenerateMeetingRequest(meeting, attendees) {
-    const { startDate, startTime, endDate, endTime } = meeting;
-    return {
-      subject: meeting.title,
-      location: { displayName: meeting.location },
-      attendees: (() => {
-        return attendees.map((attendee) => ({
-          emailAddress: { address: attendee.mail, name: attendee.displayName },
-          type: 'required'
-        }))
-      })(),
-      ...this._normalizeDates({startDate,startTime,endDate,endTime})
-    };
-  }
-
-  msteamsCreateMeeting(meeting) {
-    return this._axiosrequest({
-      path: `/api/outlook-events`,
-      method: 'post',
-      data: meeting,
-      params: { token: this.token, timezone: momenttz.tz.guess() }
-    });
-  }
-
   webExGetJoinUrl(params:WebExJoinUrlParameters) {
     let path: string, body: any;
     const webex = { ...this.webex }
@@ -293,18 +269,6 @@ export class Api {
       path: '/api/msteams-dialoghandler',
       method: 'post',
       data: { actionCards, organizer }
-    });
-  }
-
-  msteamsGetOutlookEvents({ token }) {
-    let timezone = momenttz.tz.guess();
-    return this._axiosrequest({
-      path: '/api/outlook-events',
-      method: 'get',
-      params: { token: this.token, timezone }
-    }).then((resp:any) => {
-      if(resp && resp.status === 401) return null;
-      return resp;
     });
   }
 

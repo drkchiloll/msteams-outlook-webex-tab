@@ -81,7 +81,7 @@ export class App extends Component<App.Props, App.State> {
   clientApplication = new UserAgentApplication(
     clientId, authority,
     (errDesc:string, token:string, err:string, tokenType: string) => {
-      console.log(token);
+      alert(token);
       console.log(tokenType);
     }, { redirectUri: 'https://msteams-webexdev.ngrok.io/teams-webex' }
   )
@@ -451,7 +451,7 @@ export class App extends Component<App.Props, App.State> {
   createMeeting() {
     this.setState({ newMeetingBtnLabel: null });
     let { newMeeting, attendees } = this.state;
-    let outlookEvent: any = this.api.msteamsGenerateMeetingRequest(newMeeting, attendees);
+    let outlookEvent: any = this.api.graphService.generateMeetingRequest(newMeeting, attendees);
     const webExEvent: any = this.api.webExGenerateMeetingRequest({
       startDate: outlookEvent.start.dateTime,
       subject: outlookEvent.subject,
@@ -465,7 +465,7 @@ export class App extends Component<App.Props, App.State> {
           contentType: 'text',
           content: meetingKey
         };
-        return this.api.msteamsCreateMeeting(outlookEvent);
+        return this.api.graphService.createEvent(outlookEvent);
       });
   }
 

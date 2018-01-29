@@ -50,27 +50,28 @@ export function graphServiceFactory(api: Api) {
   graph._axiosrequest = function(requestor: AxiosInstance, options) {
     let requestoptions: any = _options(options);
     if(options.path.includes('photo')) requestoptions['responseType'] = 'arraybuffer';
-    if(options.path === '/beta/me/events') {
-      const transformRequest = (data, headers) => {
+    if(options.path === '/beta/me/events' && options.method === 'get') {
+      const transformRequest = [(data, headers) => {
         headers.common['Prefer'] = 'outlook.timezone="'+
-          this.convertZones[momenttz.tz(momenttz.tz.guess()).format('z')]+'"';
-        return data || {};
-      };
+          time.convertZones[momenttz.tz(momenttz.tz.guess()).format('z')]+'"';
+        return data;
+      }];
       requestoptions['transformRequest'] = transformRequest;
     }
     return requestor
       .request(requestoptions)
       .then((resp: any) => {
-        if(resp.status >= 400) return _errors(resp.status);
-        else return resp.data;
-      })
+        if(resp.status >= 400) {
+          return _errors(resp.status);
+        } else return resp.data;
+      });
   };
 
   graph.userParams = () => ({ select: 'id,displayName,mail'});
 
   graph.userFilter = (user:string) => ({
     filter: `startsWith(displayName,'${user}') or startsWith(surname,'${user}')`
-  })
+  });
 
   graph.getMe = function() {
     return this._axiosrequest(graphBeta, {
@@ -182,7 +183,7 @@ export function graphServiceFactory(api: Api) {
 
   graph.eventPropertyFilter = () =>
     'id,subject,bodyPreview,isOrganizer,isCancelled,'+
-    'start,end,organizer,attendees'
+    'start,end,organizer,attendees';
 
   graph.getEvents = function() {
     const eventDateFilter = moment()
@@ -251,17 +252,31 @@ export function graphServiceFactory(api: Api) {
       path: `/beta/me/events/${id}`,
       method: 'delete'
     })
-  }
+  };
 
-  graph.convertZones = {
-    EST: 'Eastern Standard Time',
-    EDT: 'Eastern Daylight Time',
-    CST: 'Central Standard Time',
-    CDT: 'Central Daylight Time',
-    MST: 'Mountain Standard Time',
-    MDT: 'Mountain Daylight Time',
-    PST: 'Pacific Standard Time',
-    PDT: 'Pacific Daylight Time'
+  graph.generateMeetingRequest = (meeting, attendees) => ({
+    subject: meeting.title,
+    location: { displayName: meeting.location },
+    attendees: (() => 
+      attendees.map((attendee:any) => ({
+        emailAddress: { address: attendee.mail, name: attendee.displayName },
+        type: 'required'
+      })
+    ))(),
+    ...time.normalizeDates({
+        startDate: meeting.startDate,
+        startTime: meeting.startTime,
+        endDate: meeting.endDate,
+        endTime: meeting.endTime
+      })
+  });
+
+  graph.createEvent = function(meeting) {
+    return this._axiosrequest(graphBeta, {
+      path: '/beta/me/events',
+      method: 'post',
+      data: meeting
+    });
   };
 
   return graph;

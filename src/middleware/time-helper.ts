@@ -33,3 +33,57 @@ time.findEventProp = function(date:string) {
     moment().add(1,'days').isSame(moment(date),'day') ? 'Tomorrow' :
     'Other';
 };
+
+time.dateFormatter = (date: Date): string =>
+  momenttz.utc(date).tz(momenttz.tz.guess()).format('YYYY-MM-DD');
+
+time.formatTime = function(date:string, time:string) {
+  if(time.split(' ')[1] === 'am') {
+    switch(time.split(':')[0]) {
+      case '12':
+        return date + 'T' + '00:' + time.split(':')[1].split(' ')[0];
+      case '11':
+      case '10':
+        return date + 'T' + time.split(' ')[0];
+      default:
+        return date + 'T' + '0' + time.split(' ')[0];
+    }
+  } else {
+    switch(time.split(':')[0]) {
+      case '12':
+        return date + 'T' + time.split(' ')[0];
+      default:
+        return date + 'T' + (parseInt(time.split(':')[0], 10) + 12) +
+          ':' + time.split(':')[1].split(' ')[0];
+    }
+  }
+};
+
+time.normalizeDates = function(dates:any) {
+  let start = moment(dates.startDate).format('YYYY-MM-DD'),
+    end = moment(dates.endDate).format('YYYY-MM-DD'),
+    timeZone = momenttz.tz.guess();
+  return {
+    start: {
+      dateTime: moment(this.formatTime(start, dates.startTime))
+        .format('YYYY-MM-DDTHH:mm:ss'),
+      timeZone: this.convertZones[momenttz.tz(timeZone).format('z')]
+    },
+    end: {
+      dateTime: moment(this.formatTime(end, dates.endTime))
+        .format('YYYY-MM-DDTHH:mm:ss'),
+      timeZone: this.convertZones[(momenttz.tz(timeZone).format('z'))]
+    }
+  };
+};
+
+time.convertZones = {
+  EST: 'Eastern Standard Time',
+  EDT: 'Eastern Daylight Time',
+  CST: 'Central Standard Time',
+  CDT: 'Central Daylight Time',
+  MST: 'Mountain Standard Time',
+  MDT: 'Mountain Daylight Time',
+  PST: 'Pacific Standard Time',
+  PDT: 'Pacific Daylight Time'
+};
