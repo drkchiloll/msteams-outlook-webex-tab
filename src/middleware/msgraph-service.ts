@@ -1,11 +1,8 @@
 import axios from 'axios';
+import { AxiosInstance } from 'axios';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 import { time } from './time-helper';
-import {
-  AxiosInstance,
-  AxiosRequestConfig
-} from 'axios';
 import * as Promise from 'bluebird';
 import * as properties from '../../properties.json';
 const { msApp: {
@@ -17,11 +14,11 @@ import { Api, apiEmitter } from './index';
 export function graphServiceFactory(api: Api) {
   const graphBeta = axios.create({ baseURL: uri });
   graphBeta.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
-  graphBeta.defaults.validateStatus = (status) => status >= 200 && status <= 500
+  graphBeta.defaults.validateStatus = (status) => status >= 200 && status <= 500;
   const graphApi = axios.create({ baseURL: webApi });
   graphApi.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
   graphApi.defaults.validateStatus = (status) =>
-    status >= 200 && status <= 500
+    status >= 200 && status <= 500;
 
   const _errors = (status) => {
     // alert(status);
@@ -30,7 +27,6 @@ export function graphServiceFactory(api: Api) {
       case 401:
         resolver = { status };
         break;
-      case 404:
       default:
         resolver = null;
     }
@@ -43,7 +39,6 @@ export function graphServiceFactory(api: Api) {
     if(Object.keys(params).length > 0) options['params'] = params;
     return options;
   };
-
 
   const graph: any = {};
 
@@ -62,12 +57,13 @@ export function graphServiceFactory(api: Api) {
       .request(requestoptions)
       .then((resp: any) => {
         if(resp.status >= 400) {
+          if(resp.status===401 || resp.status===403) alert(JSON.stringify(resp.data));
           return _errors(resp.status);
         } else return resp.data;
       });
   };
 
-  graph.userParams = () => ({ select: 'id,displayName,mail'});
+  graph.userParams = () => ({ select: 'id,displayName,mail' });
 
   graph.userFilter = (user:string) => ({
     filter: `startsWith(displayName,'${user}') or startsWith(surname,'${user}')`
@@ -106,6 +102,8 @@ export function graphServiceFactory(api: Api) {
             return user;
           })
         })
+      } else {
+
       }
     })
   };
