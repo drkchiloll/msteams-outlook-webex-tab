@@ -57,7 +57,7 @@ export function graphServiceFactory(api: Api) {
       .request(requestoptions)
       .then((resp: any) => {
         if(resp.status >= 400) {
-          if(resp.status===401 || resp.status===403) alert(JSON.stringify(resp.data));
+          // if(resp.status===401 || resp.status===403) alert(JSON.stringify(resp.data));
           return _errors(resp.status);
         } else return resp.data;
       });
