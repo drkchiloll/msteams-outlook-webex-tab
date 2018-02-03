@@ -1,28 +1,13 @@
 import * as React from 'react';
-const { Component } = React;
 import * as Promise from 'bluebird';
 import * as style from './style.css';
-import { RouteComponentProps } from 'react-router';
 import autobind from 'autobind-decorator';
-import { UserAgentApplication } from 'msalx';
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 import * as openSocket from 'socket.io-client';
+import { Grid, Row, Col } from 'react-flexbox-grid';
 import * as Properties from '../../../properties.json';
-
-import {
-  Api, WebExAuth, apiEmitter, time
-} from '../../middleware';
-
-const {
-  msApp: {
-    clientId, authority, scopes,
-    webApi, tenant, redirectUri,
-    headers, contentUrl, baseUrl
-  }
-} = Properties;
-
-const socket = openSocket(baseUrl);
+import { Api, apiEmitter, time, Msal } from '../../middleware';
 
 import {
   RaisedButton, FontIcon, Drawer,
@@ -34,35 +19,15 @@ import {
   Menu
 } from 'material-ui';
 
-export namespace App {
-  export interface Props extends RouteComponentProps<void> {}
-  export interface State {
-    accessToken: string;
-    webExSettingsEditor: boolean;
-    events: any;
-    searchText: string;
-    evtHtml: any;
-    organizer: any;
-    attendees: any;
-    users: any;
-    autoCompleteMenuHeight: any;
-    newMeeting: any;
-    newMeetingBtnLabel: string;
-    webex: any;
-    webExAuthResult: string;
-    meetNowDialog: boolean;
-    choiceDialog: boolean;
-    hasSubentityId: boolean;
-  }
-}
-
-import { Grid, Row, Col } from 'react-flexbox-grid';
 import {
   EventForm, EventDates, WebExSettings,
   WebExMeetNowDialog, UserSearch, Participant
 } from '../../components';
 
-const initalState = {
+const { msApp: { baseUrl } } = Properties;
+const socket = openSocket(baseUrl);
+
+const initialState = {
   newMeeting: {
     title: '',
     newEvent: false,
@@ -74,42 +39,16 @@ const initalState = {
     start: { dateTime: '', timeZone: '' },
     end: { dateTime: '', timeZone: '' }
   },
-  attendees: []
+  attendees: [],
+  organizer: null
 };
 
-export class App extends Component<App.Props, App.State> {
-  clientApplication = new UserAgentApplication(
-    clientId, authority,
-    (errDesc:string, token:string, err:string, tokenType: string) => {
-      alert(token);
-      console.log(tokenType);
-    }, { redirectUri: 'https://msteams-webexdev.ngrok.io/teams-webex' }
-  )
-
-  callTeams = function(fromEmitter?) {
+export class App extends React.Component<any,any> {
+  callTeams = function({url, width=600, height=800}) {
     microsoftTeams.authentication.authenticate({
-      url: '/auth',
-      width: 575,
-      height: 650,
-      successCallback: (result) => {
-        let {
-          accessToken, signedInUser, context
-        } = JSON.parse(result);
-        this.authActions({
-          accessToken, signedInUser, context, fromEmitter
-        }).then(() => {
-          this.setState({ accessToken });
-          if(this.state.webex.webExId) {
-            this.getEvents();
-          }
-          if(!this.api.graphService.verifySubscription()) {
-            return this.api.graphService.createSubscription();
-          } else {
-            return;
-          }
-        })
-      },
-      failureCallback: function(err) { alert(err.toString()) }
+      url, width, height,
+      successCallback: this.teamsSuccess,
+      failureCallback: this.teamsFailure
     });
   }
 
@@ -122,17 +61,7 @@ export class App extends Component<App.Props, App.State> {
       webExSettingsEditor: false,
       evtHtml: this._renderEvents(time.uidates()),
       events: time.uidates(),
-      newMeeting: {
-        title: '',
-        newEvent: false,
-        location: '',
-        startDate: new Date(),
-        endDate: new Date(),
-        startTime: '',
-        endTime: '',
-        start: { dateTime: '', timeZone: ''},
-        end: { dateTime: '', timeZone: ''}
-      },
+      newMeeting: initialState.newMeeting,
       searchText: '',
       users: null,
       autoCompleteMenuHeight: 25,
@@ -172,17 +101,17 @@ export class App extends Component<App.Props, App.State> {
         let { newMeetingBtnLabel } = this.state;
         newMeetingBtnLabel = 'Schedule Meeting';
         this.setState({
-          newMeeting: initalState.newMeeting,
-          attendees: initalState.attendees,
+          newMeeting: initialState.newMeeting,
+          attendees: initialState.attendees,
           newMeetingBtnLabel
         });
         this.getEvents();
       }
     });
     microsoftTeams.initialize();
-    apiEmitter.on('401', () => {
-      this.callTeams(true);
-    });
+    // apiEmitter.on('401', () => {
+    //   this.callTeams(true);
+    // });
   }
 
   componentWillMount() {
@@ -193,8 +122,6 @@ export class App extends Component<App.Props, App.State> {
         this.setState({ hasSubentityId: false });
       }
     });
-    // Clear LocalStorage
-    // this.api.resetLocalStorage();
   }
 
   componentDidMount() {
@@ -216,54 +143,76 @@ export class App extends Component<App.Props, App.State> {
         this.setState({ events, evtHtml });
       }
     });
+    // localStorage.clear();
+  }
+
+  @autobind
+  teamsSuccess(result) {
+    const { accessToken, signedInUser, context } = JSON.parse(result);
+    return this.authActions({
+      accessToken, signedInUser, context
+    }).then(() => {
+      this.setState({ accessToken });
+      if(this.state.webex.webExId) {
+        return this.getEvents();
+      }
+    }).then(() => {
+      if(!this.api.graphService.verifySubscription()) {
+        return this.api.graphService.createSubscription();
+      } else {
+        return;
+      }
+    })
+  }
+
+  @autobind
+  teamsFailure() {
+    Msal.logout();
+    setTimeout(() => {
+      this.credCheck()
+    }, 500);
   }
 
   @autobind
   credCheck() {
-    let { accessToken, webExSettingsEditor, webex } = this.state;
+    let { webExSettingsEditor, webex } = this.state;
     if(!this.api.webex) {
       webExSettingsEditor = true;
       this.setState({ webExSettingsEditor });
     } else {
       this.setState({ webex: this.api.webex });
     }
-    if(!accessToken && this.api.token && this.api.signedInUser)
-      this.setState({ accessToken: this.api.token });
-    if(this.api.token) {
-      //Check if it's still Good
-      this.api
-        .graphService
+    if(!this.api.token) {
+      this.callTeams({ url: '/auth' });
+    } else {
+      return this.api.graphService
         .getMe()
         .then((resp: any) => {
           if(resp && resp.status) {
-            this.callTeams();
+            return Msal.silent().then((result: any) => {
+              if(typeof result === 'string') {
+                return this.authActions({
+                  accessToken: result,
+                  signedInUser: this.api.signedInUser,
+                  context: JSON.parse(localStorage.getItem('msTeamsContext'))
+                });
+              } else {
+                return this.callTeams({ url: '/auth' });
+              }
+            })
           } else {
-            if(!this.api.graphService.verifySubscription()) {
-              return this.api.graphService.createSubscription();
-            } else {
-              return;
+            if(this.api.webex.webExId || this.api.webex.webExPassword && this.api.token) {
+              return this.getEvents();
             }
           }
-        }).then(() => {
-          if(this.api.webex.webExId || this.api.webex.webExPassword) {
-            return this.getEvents()
-          }
         })
-    } else {
-      let isInIFrame: boolean = top.location != self.location
-      if(isInIFrame) this.callTeams();
-      else {
-        this.clientApplication
-          .loginPopup(scopes)
-          .then((value) => {})
-      }
     }
   }
 
   @autobind
-  authActions({ accessToken, signedInUser, context={}, fromEmitter=false }) {
+  authActions({ accessToken, signedInUser='', context={}, fromEmitter=false }) {
     this.api.setToken(accessToken);
-    this.api.setUser(signedInUser);
+    if(signedInUser) this.api.setUser(signedInUser);
     if(Object.keys(context).length > 0) {
       this.api.setTeamsContext(context);
     }
@@ -298,6 +247,9 @@ export class App extends Component<App.Props, App.State> {
   eventFormHandler(name, value) {
     let { newMeeting } = this.state;
     newMeeting[name] = value;
+    if(name === 'newEvent' && !value) {
+      this.setState(initialState)
+    }
     this.setState({ newMeeting });
   }
 
@@ -466,17 +418,6 @@ export class App extends Component<App.Props, App.State> {
           content: meetingKey
         };
         return this.api.graphService.createEvent(outlookEvent);
-      });
-  }
-
-  @autobind
-  getAccessToken() {
-    return this.clientApplication
-      .acquireTokenSilent(scopes)
-      .then((accessToken: string) => {
-        // console.log(accessToken);
-        this.setState({ accessToken });
-        return accessToken;
       });
   }
 
