@@ -88,7 +88,7 @@
     "moment-timezone": "^0.5.14",
     "mongoose": "^4.5.10",
     "morgan": "^1.7.0",
-    "msalx": "^0.1.2",
+    "msx-silent": "^0.1.2",
     "ngrok": "^2.2.24",
     "react": "^16.1.1",
     "react-dom": "^16.1.1",
