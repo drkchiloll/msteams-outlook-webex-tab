@@ -1,69 +1,46 @@
 import * as React from 'react';
 import autobind from 'autobind-decorator';
-import {
-  UserAgentApplication
-} from 'msalx';
-
-// The Following File Needs to be Updated for your App
-import * as Properties from '../../../properties.json';
-
-let {
-  msApp: {
-    clientId, authority, scopes,
-    webApi, tenant, redirectUri
-  }
-} = Properties;
+import { Msal } from '../../middleware/azure';
 
 microsoftTeams.initialize();
-
 export class AuthDialog extends React.Component<any, any> {
-  clientApplication = new UserAgentApplication(
-    clientId, authority,
-    (errDesc: string, token: string, err: string, tokenType: string) => {
-      // console.log(token);
-      // console.log(tokenType);
-      if(tokenType === 'id_token') {
-        this.setState({ isLoggedIn: true });
-        this.getToken();
-      }
-    }
-  )
   constructor(props) {
     super(props);
-    this.state = {
-      isLoggedIn: false,
-      counter: 5
-    };
+    this.state = { user: null };
+    Msal.authEvent.on('auth-cb-complete', (data) => {
+      if(data) {
+        this.authCallback(data);
+      } else {
+        return Msal.getToken().then(this.authCallback);
+      }
+    });
   }
 
   componentWillMount() {
-    if(this.clientApplication.isCallback(window.location.hash)) {
-      // console.log('callback');
-      this.clientApplication.handleAuthenticationResponse(
-        window.location.hash
-      );
+    if(Msal.callback(window.location.hash)) {
+      Msal.handleAuth(window.location.hash);
     } else {
-      this.clientApplication.loginRedirect(scopes);
+      Msal.redirect();
     }
   }
 
-  getToken() {
-    this.clientApplication
-      .acquireTokenSilent(scopes)
-      .then((accessToken: string) => {
-        microsoftTeams.getContext((context:any) => {
-          microsoftTeams.authentication.notifySuccess(JSON.stringify({
-            accessToken,
-            signedInUser: this.clientApplication.getUser().name,
-            context
-          }));
+  @autobind
+  authCallback(accessToken:string) {
+    this.setState({ user: Msal.user() });
+    microsoftTeams.getContext((context: any) => {
+      microsoftTeams.authentication.notifySuccess(
+        JSON.stringify({
+          accessToken,
+          signedInUser: Msal.user().name,
+          context
         })
-      });
+      )
+    });
   }
 
   render() {
-    const user = this.clientApplication.getUser();
-    const { name, identityProvider, } = user;
+    const user = this.state.user;
+    const { name, identityProvider } = user;
     return (
       <div>
         {
