@@ -77,11 +77,13 @@ export class Api {
   constructor() {}
 
   resetLocalStorage() {
-    localStorage.clear();
+    // localStorage.removeItem('accessToken');
+    // localStorage.clear();
   }
 
   initialize() {
     this.token = localStorage.getItem('accessToken');
+    this.graphService = graphServiceFactory(this);
     this.signedInUser = localStorage.getItem('signedInUser');
     try {
       this.webex = JSON.parse(localStorage.getItem('webex'));
@@ -101,8 +103,6 @@ export class Api {
     }
     try { this.subscription = JSON.parse(localStorage.getItem('subscription')) }
     catch(e) { this.subscription = null; }
-
-    this.graphService = graphServiceFactory(this);
   }
 
   setToken(token) {
