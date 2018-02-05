@@ -3,15 +3,9 @@ import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 import { EventEmitter } from 'events';
 import * as Properties from '../../properties.json';
-
 import axios from 'axios';
-
-import {
-  AxiosResponse, AxiosRequestConfig
-} from 'axios';
-
+import { AxiosResponse, AxiosRequestConfig } from 'axios';
 const apiEmitter = new EventEmitter();
-
 export { apiEmitter };
 
 const {
