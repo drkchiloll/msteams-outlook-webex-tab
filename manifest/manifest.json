@@ -2,7 +2,7 @@
   "$schema": "https://statics.teams.microsoft.com/sdk/v1.2/manifest/MicrosoftTeams.schema.json",
   "manifestVersion": "1.2",
   "version": "1.0.0",
-  "id": "23f77256-a160-4241-be46-8198e04d7b0b",
+  "id": "9d00234c-0aea-41f2-96a8-4133006f5dc4",
   "packageName": "msteams.webexdev.ngrok.io",
   "developer": {
     "name": "Sam Womack",
@@ -22,7 +22,7 @@
     "color": "webex_88.png"
   },
   "accentColor": "#303470",
-  "validDomains": ["o365.wwtatc.com"],
+  "validDomains": ["msteams-webexdev.ngrok.io", "msteams-webex.ngrok.io"],
   "configurableTabs": [{
     "configurationUrl": "https://msteams-webexdev.ngrok.io/config",
     "canUpdateConfiguration": true,
