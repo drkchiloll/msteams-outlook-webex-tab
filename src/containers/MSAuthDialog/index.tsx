@@ -20,7 +20,12 @@ export class AuthDialog extends React.Component<any, any> {
     if(Msal.callback(window.location.hash)) {
       Msal.handleAuth(window.location.hash);
     } else {
-      Msal.redirect();
+      microsoftTeams.getContext((context:any) => {
+        if(context) {
+          let user = context.upn;
+          Msal.redirect(user);
+        }
+      })
     }
   }
 

@@ -37,8 +37,8 @@ export class Msal extends EventEmitter {
     }
   }
 
-  static redirect() {
-    client.loginRedirect(['openid']);
+  static redirect(user?) {
+    client.loginRedirect(['openid'], `login_hint=${user}`);
   };
 
   static silent() {
