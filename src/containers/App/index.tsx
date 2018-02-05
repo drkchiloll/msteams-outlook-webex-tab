@@ -166,7 +166,7 @@ export class App extends React.Component<any,any> {
   }
 
   @autobind
-  teamsFailure() {
+  teamsFailure(e) {
     Msal.logout();
     setTimeout(() => {
       this.credCheck()
@@ -189,6 +189,7 @@ export class App extends React.Component<any,any> {
         .getMe()
         .then((resp: any) => {
           if(resp && resp.status) {
+            // alert('Attempt to retrieve Token Silently');
             return Msal.silent().then((result: any) => {
               if(typeof result === 'string') {
                 return this.authActions({
@@ -197,6 +198,7 @@ export class App extends React.Component<any,any> {
                   context: JSON.parse(localStorage.getItem('msTeamsContext'))
                 });
               } else {
+                // alert(JSON.stringify(result));
                 return this.callTeams({ url: '/auth' });
               }
             })
@@ -210,7 +212,7 @@ export class App extends React.Component<any,any> {
   }
 
   @autobind
-  authActions({ accessToken, signedInUser='', context={}, fromEmitter=false }) {
+  authActions({accessToken, signedInUser='', context={}, fromEmitter=false}) {
     this.api.setToken(accessToken);
     if(signedInUser) this.api.setUser(signedInUser);
     if(Object.keys(context).length > 0) {
@@ -229,14 +231,20 @@ export class App extends React.Component<any,any> {
       return this.api.graphService
         .getMe()
         .then((me) => {
+          if(me.status) {
+            return this.credCheck().then((result) => {
+              return this.scheduleEvent();
+            })
+          }
           organizer = me;
           organizer['me'] = true;
-          return this.api.graphService.getUserPhoto(organizer.id);
-        }).then((binaryImg: any) => {
-          if(binaryImg) {
-            organizer.photo = binaryImg;
-          }
-          this.setState({ newMeeting, organizer });
+          return this.api.graphService.getUserPhoto(organizer.id)
+            .then((binaryImg: any) => {
+              if(binaryImg) {
+                organizer.photo = binaryImg;
+              }
+              this.setState({ newMeeting, organizer });
+            });
         });
     } else {
       this.setState({ newMeeting });
@@ -269,7 +277,48 @@ export class App extends React.Component<any,any> {
     this.setState({ attendees });
   }
 
+  @autobind
+  meetNowActions() {
+    this.api.graphService
+      .getMe()
+      .then((resp: any) => {
+        if(resp.status) {
+          Msal.silent().then((result:any) => {
+            if(typeof result === 'string') {
+              return this.authActions({
+                accessToken: result
+              }).then((resp:any) => {
+                if(!resp) return this.meetNowActions();
+              })
+            } else {
+              this.callTeams({ url: '/auth' });
+            }
+          })
+        } else {
+          this.setState({ meetNowDialog: true });
+        }
+      })
+  }
+
+  @autobind
+  closeMeetNowDialog() {
+    this.setState({ meetNowDialog: false });
+  }
+
   render() {
+    let { meetNowDialog } = this.state;
+    let meetNow: any;
+    if(meetNowDialog) {
+      meetNow = (
+        <WebExMeetNowDialog
+          api={this.api}
+          dialogOpen={meetNowDialog}
+          webex={this.state.webex}
+          close={this.closeMeetNowDialog} />
+      );
+    } else {
+      meetNow = <div></div>;
+    }
     const admin = JSON.parse(JSON.stringify(this.state.organizer)) || '';
     const attendees = JSON.parse(JSON.stringify(this.state.attendees));
     return (
@@ -380,9 +429,18 @@ export class App extends React.Component<any,any> {
                 icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
                 primary={true}
                 onClick={this.scheduleEvent} />
-              <WebExMeetNowDialog
-                api={this.api}
-                webex={this.state.webex}/>
+              <RaisedButton
+                fullWidth={true}
+                disabled={!this.state.webex.webExId}
+                primary={true}
+                label='MEET NOW'
+                labelPosition='after'
+                icon={
+                  <i className='mdi mdi-cisco-webex mdi-18px'
+                    style={{ color: 'white', fontSize: '1.1em' }} />
+                }
+                onClick={this.meetNowActions} />
+                { meetNow }
             </div>
           </Drawer>
         </div>
