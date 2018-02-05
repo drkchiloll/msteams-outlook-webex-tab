@@ -35,7 +35,9 @@ const muiTheme = getMuiTheme({
   fontFamily: `'Times New Roman'`
 });
 
-import { App, AuthDialog, ConfigDialog, JoinWebEx } from './containers';
+import {
+  App, AuthDialog, ConfigDialog, JoinWebEx, AdminConsent
+} from './containers';
 
 const history = createBrowserHistory();
 
@@ -47,6 +49,7 @@ ReactDOM.render(
         <Route path="/config" component={ ConfigDialog } />
         <Route path="/auth" component={ AuthDialog } />
         <Route path='/join-webex' component={JoinWebEx} />
+        <Route path='/adminconsent' component={AdminConsent} />
       </Switch>
     </Router>
   </MuiThemeProvider>,
