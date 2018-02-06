@@ -5,9 +5,8 @@ import { Api } from '../../middleware';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import autobind from 'autobind-decorator';
 import {
-  Dialog, FlatButton, FontIcon,
-  CircularProgress, Subheader,
-  List, Menu, TextField
+  Dialog, FlatButton, List, TextField,
+  CircularProgress, Subheader, Menu
 } from 'material-ui';
 
 const initialState = {
@@ -19,21 +18,11 @@ const initialState = {
 };
 
 export class WebExMeetNowDialog extends React.Component<any,any> {
-  constructor(props) {
-    super(props);
-    this.state = {
-      members: null,
-      agenda: '',
-      launchBtn: 'LAUNCH',
-      attendees: [],
-      organizer: {}
-    };
-  }
+
+  state = JSON.parse(JSON.stringify(initialState));
 
   componentWillMount() {
-    if(this.props.dialogOpen) {
-      this.getTeam();
-    }
+    if(this.props.dialogOpen) this.getTeam();
   }
 
   @autobind
@@ -80,7 +69,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
         }).then(subEntityId =>
           api.msteamsDialogBuilder(subEntityId, organizer))
       }).then(() => {
-        this.resetState();
+        this.setState(initialState);
         this.props.close();
         window.open(hostJoinUrl, '_newtab');
       })
@@ -99,11 +88,6 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
         const attendees = members;
         this.setState({ organizer, members, attendees });
       });
-  }
-
-  @autobind
-  resetState() {
-    this.setState(initialState);
   }
 
   render() {
