@@ -81,6 +81,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
           api.msteamsDialogBuilder(subEntityId, organizer))
       }).then(() => {
         this.resetState();
+        this.props.close();
         window.open(hostJoinUrl, '_newtab');
       })
   }
