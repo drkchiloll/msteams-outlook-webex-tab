@@ -97,7 +97,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
       <Dialog title='Cisco WebEx Instant Meeting'
         actions={[
           <FlatButton label='Cancel' primary={true} onClick={() => {
-            this.resetState();
+            this.setState(initialState);
             this.props.close();
           }} />,
           <FlatButton
