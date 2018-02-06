@@ -222,7 +222,7 @@ export class Api {
     });
   }
 
-  msteamsResetObject = {
+  msteamsResetObject = JSON.parse(JSON.stringify({
     newEvent: false,
     start: {dateTime:'', timeZone:''},
     end: {dateTime:'', timeZone:''},
@@ -232,7 +232,7 @@ export class Api {
     startTime: '',
     endDate: new Date(),
     endTime: '',
-  };
+  }));
 
   msteamsOutlookTimeFinder({ token, user }) {}
 

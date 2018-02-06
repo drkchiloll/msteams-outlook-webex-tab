@@ -77,36 +77,19 @@ export class App extends React.Component<any,any> {
     this.api = new Api();
     this.api.initialize();
     socket.on('notification_received', (data: any) => {
-      let { events } = this.state;
-      const graphDelete = data.value.find(change => change.changeType==='deleted');
-      let matchedEvent: any;
-      if(graphDelete) {
-        const eventId = graphDelete.resourceData.id;
-        // This Cancels the WebEx Meeting
-        return this.api.graphService
-          .handleSubscriptionDeletion(eventId, events)
-          .then((event) => {
-            matchedEvent = event;
-            if(matchedEvent.webExMeetingKey && matchedEvent.isOrganizer) {
-              return this.api.webExDeleteMeeting(matchedEvent.webExMeetingKey);
-            } else {
-              return;
-            }
-          }).then(() => {
-            events[matchedEvent.prop].splice(matchedEvent.index, 1);
-            let evtHtml = this._renderEvents(events);
-            this.setState({ events, evtHtml });
-          });
-      } else {
-        let { newMeetingBtnLabel } = this.state;
-        newMeetingBtnLabel = 'Schedule Meeting';
-        this.setState({
-          newMeeting: initialState.newMeeting,
-          attendees: initialState.attendees,
-          newMeetingBtnLabel
+      return this.api.graphService
+        .handleIncomingSocket(data, this.state.events)
+        .then((events:any) => {
+          if(events && events.newMeeting && events.attendees) {
+            this.setState(events);
+            this.getEvents();
+          } else {
+            this.setState({
+              events,
+              evtHtml: this._renderEvents(events)
+            });
+          }
         });
-        this.getEvents();
-      }
     });
     microsoftTeams.initialize();
   }

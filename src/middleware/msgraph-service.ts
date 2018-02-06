@@ -115,11 +115,15 @@ export function graphServiceFactory(api: Api) {
   };
 
   graph.verifySubscription = function(): boolean {
+    let subscription:any;
+    try {
+      subscription = JSON.parse(localStorage.getItem('subscription'));
+    } catch(e) { subscription = undefined }
     let expiryDate:any;
-    if(api.subscription) {
+    if(subscription) {
       expiryDate = moment(api.subscription.expirationDateTime).format();
     }
-    return !api.subscription ? false :
+    return !subscription ? false :
       moment().utc().isAfter(moment(expiryDate))
       ? false : true;
   };  
@@ -138,7 +142,6 @@ export function graphServiceFactory(api: Api) {
       data: subscription
     }).then((subscription) => {
       if(subscription) {
-        api.subscription = subscription;
         api.setSubscription(subscription);
         return true;
       } else {
@@ -274,6 +277,31 @@ export function graphServiceFactory(api: Api) {
       method: 'post',
       data: meeting
     });
+  };
+
+  graph.handleIncomingSocket = function(eventUpdates:any, events: any) {
+    const deleteEvent = eventUpdates.value.find(change => change.changeType === 'deleted');
+    if(deleteEvent) {
+      const eventId = deleteEvent.resourceData.id;
+      return this.handleSubscriptionDeletion(eventId, events)
+        .then((event) => {
+          if(event.webExMeetingKey && event.isOrganizer) {
+            return api.webExDeleteMeeting(event.webExMeetingKey).then(() => event);
+          } else {
+            return event;
+          }
+        })
+        .then((event) => {
+          events[event.prop].splice(event.index, 1);
+          return events;
+        });
+    } else {
+      return Promise.resolve({
+        newMeeting: api.msteamsResetObject,
+        attendees: [],
+        newMeetingBtnLabel: 'Schedule Meeting'
+      });
+    }
   };
 
   return graph;
