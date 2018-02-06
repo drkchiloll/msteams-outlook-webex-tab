@@ -138,8 +138,8 @@ export function graphServiceFactory(api: Api) {
       method: 'post',
       data: subscription
     }).then((subscription) => {
-      // alert(JSON.stringify(subscription));
       if(subscription) {
+        api.subscription = subscription;
         api.setSubscription(subscription);
         return true;
       } else {
