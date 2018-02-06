@@ -445,7 +445,7 @@ export class App extends React.Component<any,any> {
   @autobind
   createMeeting() {
     this.setState({ newMeetingBtnLabel: null });
-    let { newMeeting, attendees } = this.state;
+    let { newMeeting, attendees } = JSON.parse(JSON.stringify(this.state));
     let outlookEvent: any = this.api.graphService.generateMeetingRequest(newMeeting, attendees);
     const webExEvent: any = this.api.webExGenerateMeetingRequest({
       startDate: outlookEvent.start.dateTime,
