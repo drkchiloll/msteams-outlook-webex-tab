@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { Row, Col } from 'react-flexbox-grid';
-import * as $ from 'jquery';
 import autobind from 'autobind-decorator';
 import {
   Avatar, IconButton, CardActions, 
