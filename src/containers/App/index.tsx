@@ -8,17 +8,12 @@ import * as openSocket from 'socket.io-client';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import * as Properties from '../../../properties.json';
 import { Api, apiEmitter, time, Msal } from '../../middleware';
-
 import {
-  RaisedButton, FontIcon, Drawer,
+  RaisedButton, Drawer,
   List, Subheader, ListItem,
-  makeSelectable, TextField,
-  DatePicker, SelectField, MenuItem,
-  Paper, Avatar,
-  IconButton, Dialog, FlatButton,
-  Menu
+  SelectField, makeSelectable,
+  Dialog, FlatButton, Menu
 } from 'material-ui';
-
 import {
   EventForm, EventDates, WebExSettings,
   WebExMeetNowDialog, UserSearch, Participant
@@ -528,7 +523,6 @@ export class App extends React.Component<any,any> {
           primaryText={'No upcoming meetings'}
           key='upMeet_0'
           open={true}
-          // disabled
           style={{height: 35}}
           innerDivStyle={{
             fontSize: '90%',
@@ -555,9 +549,8 @@ export class App extends React.Component<any,any> {
                 {evt.subject}<br/>
                 {moment(new Date(evt.startDate)).format('h:mm a')}
                 {' - ' + moment(new Date(evt.endDate)).format('h:mm a')} <br/>
-                <FontIcon
-                  className='mdi mdi-cisco-webex mdi-18px'
-                  color='rgb(55,103,52)' />
+                <i className='mdi mdi-cisco-webex mdi-18px'
+                  style={{ color: 'rgb(55,103,52)' }} />
                 &nbsp;Cisco WebEx Meeting
               </div>
             }
