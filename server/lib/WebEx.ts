@@ -1,19 +1,12 @@
 import * as Promise from 'bluebird';
 import * as xml2js from 'xml2js';
 import {  properties as Properties } from '../services';
-import {
-  userServFactory, meetingsServFactory
-} from '../services';
-
+import { userServFactory, meetingsServFactory } from '../services';
 import axios from 'axios';
 import { stringify } from 'querystring'
 import axiosCookieJarSupport from '@3846masa/axios-cookiejar-support';
 import * as tough from 'tough-cookie';
-// axiosCookieJarSupport(axios);
-
-import {
-  MeetingService
-} from '../models/WebEx';
+import { MeetingService } from '../models/WebEx';
 
 const { Builder, parseString } = xml2js,
       xmlBuilder = new Builder({headless: true}),
@@ -58,11 +51,8 @@ export class WebEx {
     const cookieJar = new tough.CookieJar();
     instrequest.defaults.jar = cookieJar;
     instrequest.defaults.withCredentials = true;
-    // axios.defaults.jar = cookieJar;
-    // axios.defaults.withCredentials = true;
     return instrequest.post(loginUrl, stringify(loginBody))
       .then((resp) => {
-        // console.log(resp.data);
         const meetingForm = Object.keys(meetingBody).map(key =>
          `${encodeURI(key)}=${encodeURIComponent(meetingBody[key])}`).join('&');
         let meetUrl = meetingUrl + meetingForm;

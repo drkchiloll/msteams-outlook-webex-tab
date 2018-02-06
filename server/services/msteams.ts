@@ -1,19 +1,9 @@
 import { MsGraph } from '../lib';
-import * as Promise from 'bluebird';
-import {
-  ChatMessage, MSTeamsService
-} from '../models';
+import { properties } from './index';
+const {msApp: { baseUrl }} = properties;
 
-export function MsTeamsServiceFactory(graph: MsGraph): MSTeamsService {
+export function MsTeamsServiceFactory(graph: MsGraph): any {
   const service: any = {};
-
-  service.listMembers = function(id) {
-    return graph._request({
-      method: 'get',
-      path: `/beta/groups/${id}/members`,
-      body: {}
-    });
-  };
 
   service.postActionCard = function (actions, organizer) {
     let card: any = {
@@ -21,16 +11,13 @@ export function MsTeamsServiceFactory(graph: MsGraph): MSTeamsService {
       themeColor: '0078D7',
       title: `${organizer.displayName} has started a New Cisco WebEx Conference`,
       sections: [{
-        images: [{image: 'https://msteams-webex.ngrok.io/webex.jpg', text: 'alt text'}],
+        images: [{image: `${baseUrl}/webex.jpg`, text: 'alt text'}],
         text: 'To Automatically Join the Web Conference already in progress click on the Join Button.'
       }],
       potentialAction: actions
     };
-    // console.log(card);
-    return graph.connectorRequest(card);
+    return graph.connector(card);
   };
 
   return service;
 }
-
-export { MSTeamsService };
