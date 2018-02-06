@@ -14,6 +14,7 @@ export interface MsProps {
   entityId: string;
   teamsUrl: string;
   connectorUrl: string;
+  contentUrl: string;
 }
 
 export interface WebExProps {
@@ -37,6 +38,6 @@ export interface PropTypes {
   logging: LogProps;
 }
 
-const Properties: PropTypes = properties;
-export { Properties };
+export const Properties: PropTypes = properties;
+// export { Properties };
 

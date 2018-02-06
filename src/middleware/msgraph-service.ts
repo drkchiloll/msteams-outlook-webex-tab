@@ -4,12 +4,11 @@ import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
 import { time } from './time-helper';
 import * as Promise from 'bluebird';
-import * as properties from '../../properties.json';
+import { Api, apiEmitter } from './index';
+import { Properties } from './props';
 const { msApp: {
   uri, webApi, connectorUrl, teamsUrl, clientId, contentUrl, baseUrl
-} } = properties;
-
-import { Api, apiEmitter } from './index';
+} } = Properties;
 
 export function graphServiceFactory(api: Api) {
   const graphBeta = axios.create({ baseURL: uri });
