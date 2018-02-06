@@ -1,20 +1,10 @@
 import * as React from 'react';
 import {  Grid, Row, Col } from 'react-flexbox-grid';
 import autobind from 'autobind-decorator';
-import * as moment from 'moment';
-import * as momenttz from 'moment-timezone';
-
-import {
-  RaisedButton, FontIcon, TextField,
-  DatePicker, AutoComplete, MenuItem,
-  IconButton
-} from 'material-ui';
+import { TextField } from 'material-ui';
 
 export class EventForm extends React.Component<any, any> {
-  state = {
-    errorText: '',
-    title: ''
-  }
+  state = { errorText: '', title: '' }
 
   @autobind
   meetingProps(e: any, value: string) {
@@ -31,8 +21,7 @@ export class EventForm extends React.Component<any, any> {
 
   @autobind
   titleFocus() {
-    if(this.state.errorText)
-      this.setState({ errorText: '' });
+    if(this.state.errorText) this.setState({ errorText: '' });
   }
 
   @autobind
