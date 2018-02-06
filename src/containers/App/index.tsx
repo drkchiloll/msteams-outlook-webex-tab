@@ -109,9 +109,6 @@ export class App extends React.Component<any,any> {
       }
     });
     microsoftTeams.initialize();
-    // apiEmitter.on('401', () => {
-    //   this.callTeams(true);
-    // });
   }
 
   componentWillMount() {
