@@ -61,7 +61,7 @@ export class App extends React.Component<any,any> {
       webExSettingsEditor: false,
       evtHtml: this._renderEvents(time.uidates()),
       events: time.uidates(),
-      newMeeting: initialState.newMeeting,
+      newMeeting: JSON.parse(JSON.stringify(initialState.newMeeting)),
       searchText: '',
       users: null,
       autoCompleteMenuHeight: 25,
@@ -203,9 +203,14 @@ export class App extends React.Component<any,any> {
               }
             })
           } else {
-            if(this.api.webex.webExId || this.api.webex.webExPassword && this.api.token) {
-              return this.getEvents();
+            let promises = [];
+            if(!this.api.graphService.verifySubscription()) {
+              promises.push(this.api.graphService.createSubscription());
             }
+            if(this.api.webex.webExId || this.api.webex.webExPassword && this.api.token) {
+              promises.push(this.getEvents());
+            }
+            Promise.all(promises);
           }
         })
     }
