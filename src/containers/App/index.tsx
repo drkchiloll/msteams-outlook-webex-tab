@@ -14,7 +14,7 @@ import {
   List, Subheader, ListItem,
   makeSelectable, TextField,
   DatePicker, SelectField, MenuItem,
-  Paper, AutoComplete, Avatar,
+  Paper, Avatar,
   IconButton, Dialog, FlatButton,
   Menu
 } from 'material-ui';
@@ -57,14 +57,10 @@ export class App extends React.Component<any,any> {
   constructor(props) {
     super(props);
     this.state = {
-      accessToken: null,
       webExSettingsEditor: false,
       evtHtml: this._renderEvents(time.uidates()),
       events: time.uidates(),
       newMeeting: JSON.parse(JSON.stringify(initialState.newMeeting)),
-      searchText: '',
-      users: null,
-      autoCompleteMenuHeight: 25,
       organizer: null,
       attendees: [],
       newMeetingBtnLabel: 'Schedule Meeting',
@@ -82,7 +78,7 @@ export class App extends React.Component<any,any> {
         .then((events:any) => {
           if(events && events.newMeeting && events.attendees) {
             this.setState(events);
-            this.getEvents();
+            this.api.graphService.getEvents();
           } else {
             this.setState({
               events,
@@ -131,18 +127,7 @@ export class App extends React.Component<any,any> {
     const { accessToken, signedInUser, context } = JSON.parse(result);
     return this.authActions({
       accessToken, signedInUser, context
-    }).then(() => {
-      this.setState({ accessToken });
-      if(this.state.webex.webExId) {
-        return this.getEvents();
-      }
-    }).then(() => {
-      if(!this.api.graphService.verifySubscription()) {
-        return this.api.graphService.createSubscription();
-      } else {
-        return;
-      }
-    })
+    }).then(this.promiseHandler);
   }
 
   @autobind
@@ -178,19 +163,11 @@ export class App extends React.Component<any,any> {
                   context: JSON.parse(localStorage.getItem('msTeamsContext'))
                 });
               } else {
-                // alert(JSON.stringify(result));
                 return this.callTeams({ url: '/auth' });
               }
             })
           } else {
-            let promises = [];
-            if(!this.api.graphService.verifySubscription()) {
-              promises.push(this.api.graphService.createSubscription());
-            }
-            if(this.api.webex.webExId || this.api.webex.webExPassword && this.api.token) {
-              promises.push(this.getEvents());
-            }
-            Promise.all(promises);
+            return this.promiseHandler();
           }
         })
     }
@@ -206,6 +183,18 @@ export class App extends React.Component<any,any> {
     if(fromEmitter) apiEmitter.emit('authenticated');
     this.api.initialize();
     return Promise.resolve(null);
+  }
+
+  @autobind
+  promiseHandler() {
+    let promises = [];
+    if(this.state.webex.webExId) {
+      promises.push(this.api.graphService.getEvents());
+    }
+    if(!this.api.graphService.verifySubscription()) {
+      promises.push(this.api.graphService.createSubscription());
+    }
+    if(promises.length > 0) return Promise.all(promises);
   }
 
   @autobind
@@ -465,11 +454,6 @@ export class App extends React.Component<any,any> {
   }
 
   @autobind
-  getEvents() {
-    this.api.graphService.getEvents();    
-  }
-
-  @autobind
   _renderEvents(events) {
     return (
       <List>
@@ -480,11 +464,7 @@ export class App extends React.Component<any,any> {
               <ListItem
                 key={`${i}_listItem`}
                 primaryText={key}
-                initiallyOpen={(() => {
-                  // if(events[key].length === 0) return false;
-                  // else return true;
-                  return true;
-                })()}
+                initiallyOpen={true}
                 innerDivStyle={{
                   fontSize: '90%',
                   marginLeft: '2px'
@@ -526,7 +506,7 @@ export class App extends React.Component<any,any> {
           if(result.authentication === 'SUCCESS') {
             localStorage.setItem('webex', JSON.stringify(this.state.webex));
             this.api.initialize();
-            this.getEvents();
+            this.api.graphService.getEvents();
           }
           this.setState({ webExAuthResult: result.authentication });
         } else {
