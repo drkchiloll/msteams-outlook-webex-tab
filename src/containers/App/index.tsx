@@ -12,8 +12,10 @@ import {
   Dialog, FlatButton, Menu
 } from 'material-ui';
 import {
-  WebExSettings, WebExMeetNowDialog, ScheduleMeeting, NagPopup, EventsPanel
+  WebExSettings, WebExMeetNowDialog, ScheduleMeeting,
+  NagPopup, EventsPanel, ScheduleButton, MeetNowButton
 } from '../../components';
+
 const { msApp: { baseUrl } } = Properties;
 const socket = openSocket(baseUrl);
 
@@ -288,32 +290,11 @@ export class App extends React.Component<any,any> {
         }
         { choiceDialog && !hasSubentityId ? <NagPopup /> : null }
         <div style={this.styles().drawer}>
-          <Drawer
-            docked={true}
-            width={285}
-            open={true} >
+          <Drawer docked={true} width={285} open={true} >
             <EventsPanel events={JSON.parse(JSON.stringify(events))} />
-            <RaisedButton
-              label='Schedule A Meeting'
-              style={{
-                bottom: 2, position: 'relative', marginTop: '15px'
-              }}
-              fullWidth={true}
-              labelPosition='after'
-              icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
-              primary={true}
-              onClick={this.scheduleEvent} />
-            <RaisedButton
-              fullWidth={true}
-              disabled={!this.state.webex.webExId}
-              primary={true}
-              label='MEET NOW'
-              labelPosition='after'
-              icon={
-                <i className='mdi mdi-cisco-webex mdi-18px'
-                  style={{ color: 'white', fontSize: '1.1em' }} />
-              }
-              onClick={this.meetNowActions} />
+            <ScheduleButton schedule={this.scheduleEvent} />
+            <MeetNowButton webexId={this.state.webex.webExId}
+              meetNow={this.meetNowActions} />
           </Drawer>
         </div>
         <WebExSettings

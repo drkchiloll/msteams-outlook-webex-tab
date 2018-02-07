@@ -7,3 +7,5 @@ export { Participant } from './Participant';
 export { ScheduleMeeting } from './ScheduleMeeting';
 export { NagPopup } from './NagPopup';
 export { EventsPanel } from './EventsPanel';
+export { ScheduleButton } from './ScheduleButton';
+export { MeetNowButton } from './MeetNowButton';
