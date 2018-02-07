@@ -5,15 +5,11 @@ import * as openSocket from 'socket.io-client';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import * as Properties from '../../../properties.json';
 import { Api, apiEmitter, time, Msal } from '../../middleware';
+import { Drawer } from 'material-ui';
 import {
-  RaisedButton, Drawer,
-  List, Subheader, ListItem,
-  SelectField, makeSelectable,
-  Dialog, FlatButton, Menu
-} from 'material-ui';
-import {
-  WebExSettings, WebExMeetNowDialog, ScheduleMeeting,
-  NagPopup, EventsPanel, ScheduleButton, MeetNowButton
+  WebExSettings, ScheduleMeeting, NagPopup,
+  EventsPanel, ScheduleButton, MeetNowButton,
+  WebExMeetNowDialog as WebExMeetNow
 } from '../../components';
 
 const { msApp: { baseUrl } } = Properties;
@@ -36,16 +32,6 @@ const initialState = {
 };
 
 export class App extends React.Component<any,any> {
-  callTeams = function({url, width=600, height=800}) {
-    microsoftTeams.authentication.authenticate({
-      url, width, height,
-      successCallback: this.teamsSuccess,
-      failureCallback: this.teamsFailure
-    });
-  }
-
-  api:Api = null;
-
   constructor(props) {
     super(props);
     this.state = {
@@ -77,6 +63,23 @@ export class App extends React.Component<any,any> {
     });
     microsoftTeams.initialize();
   }
+
+  styles = () => ({
+    drawer: {
+      display: this.state.choiceDialog ? 'none' : 'inline',
+      fontSize: '90%'
+    }
+  })
+
+  callTeams = function ({ url, width = 600, height = 800 }) {
+    microsoftTeams.authentication.authenticate({
+      url, width, height,
+      successCallback: this.teamsSuccess,
+      failureCallback: this.teamsFailure
+    });
+  }
+
+  api: Api;
 
   componentWillMount() {
     microsoftTeams.getContext((context: microsoftTeams.Context) => {
@@ -250,32 +253,31 @@ export class App extends React.Component<any,any> {
       })
   }
 
-  styles = () => ({
-    drawer: {
-      display: this.state.choiceDialog ? 'none' : 'inline',
-      fontSize: '90%'
-    }
+  deepCopy = (organizer, attendees, events) => ({
+    admin: JSON.parse(JSON.stringify(organizer)),
+    participants: JSON.parse(JSON.stringify(attendees)),
+    meetings: JSON.parse(JSON.stringify(events))
   })
 
   render() {
     const {
       meetNowDialog, newMeeting, newMeetingBtnLabel,
       choiceDialog, hasSubentityId, events,
+      organizer, attendees
     } = this.state;
-    const admin = JSON.parse(JSON.stringify(this.state.organizer)) || '';
-    const attendees = JSON.parse(JSON.stringify(this.state.attendees));
+    const {
+      admin, participants, meetings
+    } = this.deepCopy(organizer, attendees, events);
+
     return (
       <div>
         {
           meetNowDialog ?
-            <WebExMeetNowDialog api={this.api}
+            <WebExMeetNow api={this.api}
               dialogOpen={meetNowDialog}
               webex={this.state.webex}
               close={() => this.setState({ meetNowDialog: false })} />
             :
-            null
-        }
-        {
           newMeeting.newEvent ?
             <ScheduleMeeting formHandler={this.eventFormHandler}
               buttonLabel={newMeetingBtnLabel}
@@ -284,14 +286,15 @@ export class App extends React.Component<any,any> {
               remove={this.removeParticipant}
               newMeeting={newMeeting}
               admin={admin}
-              attendees={attendees}
+              attendees={participants}
               api={this.api} /> :
+          choiceDialog && !hasSubentityId ?
+            <NagPopup /> : 
             null
         }
-        { choiceDialog && !hasSubentityId ? <NagPopup /> : null }
         <div style={this.styles().drawer}>
           <Drawer docked={true} width={285} open={true} >
-            <EventsPanel events={JSON.parse(JSON.stringify(events))} />
+            <EventsPanel events={meetings} />
             <ScheduleButton schedule={this.scheduleEvent} />
             <MeetNowButton webexId={this.state.webex.webExId}
               meetNow={this.meetNowActions} />
