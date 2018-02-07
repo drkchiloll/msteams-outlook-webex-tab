@@ -1,16 +1,7 @@
 import * as React from 'react';
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import autobind from 'autobind-decorator';
-import * as moment from 'moment';
-import * as momenttz from 'moment-timezone';
-
 import { time } from '../../middleware';
-
-import {
-  RaisedButton, FontIcon, TextField,
-  DatePicker, MenuItem, SelectField,
-  DropDownMenu, Subheader
-} from 'material-ui';
+import { DatePicker, MenuItem, SelectField } from 'material-ui';
 
 export class EventDates extends React.Component<any, any> {
   constructor(props) {
@@ -18,32 +9,20 @@ export class EventDates extends React.Component<any, any> {
     this.state = { endDate: new Date() }
   }
 
-  styles = {
+  styles: any = {
     heading: {},
     datePicker: {
       marginLeft: 8
     },
     selectField: {
       marginLeft: 10
-    },
-    dropDownMenu: {
-      width: 150, margin: 0, padding: 0
     }
   }
 
-  @autobind
-  durationChangeHandler(e:any, index: number, value: string) {
-    let { startTime } = this.props,
-        dateFormat = 'YYYY-MM-DD',
-        startDate = moment().format(dateFormat);
-    const formattedDate = moment(time.formatTime(startDate, startTime));
+  durationChangeHandler = (e:any, index: number, value: string) => {
+    const { startTime } = this.props;
     this.durationValue = value;
-    if(value === '1 hour') value = '1 hours';
-    if(value === '1.5 hours') value = '90 minutes';
-    let duration: any = parseInt(value.split(' ')[0], 10),
-        ordinal: any = value.split(' ')[1];
-    const timeDuration = formattedDate.add(duration, ordinal).format('h:mm a');
-    this.props.inputChange('endTime', timeDuration);
+    this.props.inputChange('endTime', time.meetingDuration(startTime, value));
   }
 
   durationValue = '30 minutes';
@@ -64,9 +43,7 @@ export class EventDates extends React.Component<any, any> {
                   fullWidth={true}
                   container='inline'
                   mode='portrait'
-                  formatDate={(date: Date) => {
-                    return moment(date).format('MM/DD/YYYY');
-                  }}
+                  formatDate={time.materialDatePickFormat}
                   autoOk={true}
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date });
@@ -82,11 +59,10 @@ export class EventDates extends React.Component<any, any> {
                 <SelectField
                   value={(() => {
                     return startTime || (() => {
-                      let start = moment();
-                      let remainder = 30 - (start.minute() % 30);
+                      let remainder = 30 - (time.now.minute() % 30);
                       return this.props.inputChange(
                         'startTime',
-                        moment(start).add(remainder, 'minutes').format('h:mm a')
+                        time.addMinutes(remainder)
                       )
                     })()
                   })()}
@@ -111,9 +87,7 @@ export class EventDates extends React.Component<any, any> {
                   fullWidth={true}
                   container='inline'
                   mode='portrait'
-                  formatDate={(date: Date) => {
-                    return moment(date).format('MM/DD/YYYY');
-                  }}
+                  formatDate={time.materialDatePickFormat}
                   autoOk={true}
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date })
@@ -126,11 +100,10 @@ export class EventDates extends React.Component<any, any> {
                 <SelectField
                   value={(() => {
                     return endTime || (() => {
-                      let start = moment();
-                      let remainder = 30 - start.minute() % 30;
+                      let remainder = 30 - time.now.minute() % 30;
                       return this.props.inputChange(
                         'endTime',
-                        moment(start).add((remainder + 30), 'minutes').format('h:mm a')
+                        time.addMinutes(remainder + 30)
                       )
                     })()
                   })()}
