@@ -166,13 +166,12 @@ export class App extends React.Component<any,any> {
   }
 
   @autobind
-  authActions({accessToken, signedInUser='', context={}, fromEmitter=false}) {
+  authActions({accessToken, signedInUser='', context={}}) {
     this.api.setToken(accessToken);
     if(signedInUser) this.api.setUser(signedInUser);
     if(Object.keys(context).length > 0) {
       this.api.setTeamsContext(context);
     }
-    if(fromEmitter) apiEmitter.emit('authenticated');
     this.api.initialize();
     return Promise.resolve(null);
   }
@@ -265,7 +264,14 @@ export class App extends React.Component<any,any> {
         }
       })
   }
-  
+
+  styles = () => ({
+    drawer: {
+      display: this.state.choiceDialog ? 'none' : 'inline',
+      fontSize: '90%'
+    }
+  })
+
   render() {
     const {
       meetNowDialog, newMeeting, newMeetingBtnLabel, choiceDialog, hasSubentityId
@@ -297,38 +303,33 @@ export class App extends React.Component<any,any> {
             null
         }
         { choiceDialog && !hasSubentityId ? <NagPopup /> : null }
-        <div style={{
-          display: choiceDialog ? 'none' : 'inline-block',
-          fontSize: '90%'
-        }}>
+        <div style={this.styles().drawer}>
           <Drawer
             docked={true}
             width={285}
             open={true} >
             { this.state.evtHtml }
-            <div style={{ display: this.state.events ? 'inline-block': 'none' }}>
-              <RaisedButton
-                label='Schedule A Meeting'
-                style={{
-                  bottom: 2, position: 'relative', marginTop: '15px'
-                }}
-                fullWidth={true}
-                labelPosition='after'
-                icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
-                primary={true}
-                onClick={this.scheduleEvent} />
-              <RaisedButton
-                fullWidth={true}
-                disabled={!this.state.webex.webExId}
-                primary={true}
-                label='MEET NOW'
-                labelPosition='after'
-                icon={
-                  <i className='mdi mdi-cisco-webex mdi-18px'
-                    style={{ color: 'white', fontSize: '1.1em' }} />
-                }
-                onClick={this.meetNowActions} />
-            </div>
+            <RaisedButton
+              label='Schedule A Meeting'
+              style={{
+                bottom: 2, position: 'relative', marginTop: '15px'
+              }}
+              fullWidth={true}
+              labelPosition='after'
+              icon={<i style={{ color: '#D1C4E9' }} className="mdi mdi-calendar mdi-18px" />}
+              primary={true}
+              onClick={this.scheduleEvent} />
+            <RaisedButton
+              fullWidth={true}
+              disabled={!this.state.webex.webExId}
+              primary={true}
+              label='MEET NOW'
+              labelPosition='after'
+              icon={
+                <i className='mdi mdi-cisco-webex mdi-18px'
+                  style={{ color: 'white', fontSize: '1.1em' }} />
+              }
+              onClick={this.meetNowActions} />
           </Drawer>
         </div>
         <WebExSettings
