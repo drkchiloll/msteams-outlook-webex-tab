@@ -3,7 +3,6 @@ import * as Promise from 'bluebird';
 import { Participant, UserSearch } from '../index';
 import { Api } from '../../middleware';
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import autobind from 'autobind-decorator';
 import {
   Dialog, FlatButton, List, TextField,
   CircularProgress, Subheader, Menu
@@ -25,8 +24,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
     if(this.props.dialogOpen) this.getTeam();
   }
 
-  @autobind
-  removeParticipant(attendeeId) {
+  removeParticipant = (attendeeId) => {
     let { attendees } = this.state;
     let idx = attendees.findIndex(attendee => 
       attendee.id === attendeeId);
@@ -34,15 +32,13 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
     this.setState({ attendees });
   }
 
-  @autobind
-  addParticipant(attendee) {
+  addParticipant = (attendee) => {
     let { attendees }  = this.state;
     attendees.unshift(attendee);
     this.setState({ attendees });
   }
 
-  @autobind
-  launchMeeting() {
+  launchMeeting = () => {
     this.setState({ launchBtn: '' });
     let { attendees, organizer } = this.state;
     const api: Api = this.props.api;
@@ -75,8 +71,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
       })
   }
 
-  @autobind
-  getTeam() {
+  getTeam = () => {
     const api: Api = this.props.api;
     this.setState({ dialogOpen: true });
     api.graphService.getTeam()
@@ -94,75 +89,75 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
     const { attendees, organizer } = this.state;
     return (
       <div style={{ position: 'relative' }}>
-      <Dialog title='Cisco WebEx Instant Meeting'
-        actions={[
-          <FlatButton label='Cancel' primary={true} onClick={() => {
-            this.setState(initialState);
-            this.props.close();
-          }} />,
-          <FlatButton
-            label={
-              this.state.launchBtn ||
-              <i className='mdi mdi-rotate-right mdi-spin mdi-24px' 
-                style={{ verticalAlign: 'middle', color: '#673AB7' }} />
-            }
-            primary={true}
-            onClick={this.launchMeeting} />
-        ]}
-        modal={false}
-        open={true}
-        style={{
-          maxWidth: 'none', width: '100%', height: 600
-        }}
-        autoScrollBodyContent={true} >
-        <Grid>
-          <Row>
-            <Col sm={5}>
-              <TextField
-                value={this.state.agenda}
-                floatingLabelText='Meeting Agenda'
-                floatingLabelFocusStyle={{fontSize: '1.5em'}}
-                hintText='Optional Agenda Description'
-                multiLine={true}
-                fullWidth={true}
-                autoFocus
-                onChange={(e, value) => {
-                  this.setState({ agenda: value });
-                }}
-                rows={3} />
-            </Col>
-            <Col sm={7}>
-              <div style={{ marginLeft: '75px' }}>
-                <div style={{ marginLeft: '20px', display: organizer.id ? 'none': 'inline' }}>
-                  <CircularProgress size={15} />
+        <Dialog title='Cisco WebEx Instant Meeting'
+          actions={[
+            <FlatButton label='Cancel' primary={true} onClick={() => {
+              this.setState(initialState);
+              this.props.close();
+            }} />,
+            <FlatButton
+              label={
+                this.state.launchBtn ||
+                <i className='mdi mdi-rotate-right mdi-spin mdi-24px' 
+                  style={{ verticalAlign: 'middle', color: '#673AB7' }} />
+              }
+              primary={true}
+              onClick={this.launchMeeting} />
+          ]}
+          modal={false}
+          open={true}
+          style={{
+            maxWidth: 'none', width: '100%', height: 600
+          }}
+          autoScrollBodyContent={true} >
+          <Grid>
+            <Row>
+              <Col sm={5}>
+                <TextField
+                  value={this.state.agenda}
+                  floatingLabelText='Meeting Agenda'
+                  floatingLabelFocusStyle={{fontSize: '1.5em'}}
+                  hintText='Optional Agenda Description'
+                  multiLine={true}
+                  fullWidth={true}
+                  autoFocus
+                  onChange={(e, value) => {
+                    this.setState({ agenda: value });
+                  }}
+                  rows={3} />
+              </Col>
+              <Col sm={7}>
+                <div style={{ marginLeft: '75px' }}>
+                  <div style={{ marginLeft: '20px', display: organizer.id ? 'none': 'inline' }}>
+                    <CircularProgress size={15} />
+                  </div>
+                  <Subheader> Organizer </Subheader>
+                  { organizer.id && organizer.displayName && organizer.mail ?
+                    <Participant user={JSON.parse(JSON.stringify(organizer))} /> :
+                    <div></div> }
+                  <Menu maxHeight={400} >
+                    <Subheader> Participants </Subheader>
+                    { attendees.length===0 ? <div></div> :
+                      JSON.parse(JSON.stringify(attendees)).map((att:any) =>
+                        <Participant user={att} key={att.id} remove={this.removeParticipant} />)}
+                  </Menu>
                 </div>
-                <Subheader> Organizer </Subheader>
-                { organizer.id && organizer.displayName && organizer.mail ?
-                  <Participant user={JSON.parse(JSON.stringify(organizer))} /> :
-                  <div></div> }
-                <Menu maxHeight={400} >
-                  <Subheader> Participants </Subheader>
-                  { attendees.length===0 ? <div></div> :
-                    JSON.parse(JSON.stringify(attendees)).map((att:any) =>
-                      <Participant user={att} key={att.id} remove={this.removeParticipant} />)}
-                </Menu>
-              </div>
-            </Col>
-          </Row>
-          <Row>
-            <Col sm={12}>
-              <div style={{
-                position: 'absolute',
-                top: 215,
-                width: '37%',
-                marginTop: 0
-              }}>
-                <UserSearch api={this.props.api} addAttendee={this.addParticipant} />
-              </div>
-            </Col>
-          </Row>
-        </Grid>
-      </Dialog>
+              </Col>
+            </Row>
+            <Row>
+              <Col sm={12}>
+                <div style={{
+                  position: 'absolute',
+                  top: 215,
+                  width: '37%',
+                  marginTop: 0
+                }}>
+                  <UserSearch api={this.props.api} addAttendee={this.addParticipant} />
+                </div>
+              </Col>
+            </Row>
+          </Grid>
+        </Dialog>
       </div>
     )
   }

@@ -1,8 +1,7 @@
 import * as React from 'react';
 import * as Promise from 'bluebird';
-import autobind from 'autobind-decorator';
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import { AutoComplete, MenuItem, Avatar } from 'material-ui';
+import { AutoComplete, MenuItem } from 'material-ui';
 import { Api } from '../../middleware';
 
 const initialState:any = {
@@ -18,7 +17,7 @@ export class UserSearch extends React.Component<any,any> {
   
   api:Api = this.props.api;
 
-  styles = {
+  styles: any = {
     spinner: {
       vertialAlign: 'middle', marginTop: '-20px',
       marginLeft: '110px', color: '#9575CD'
@@ -34,8 +33,7 @@ export class UserSearch extends React.Component<any,any> {
     }
   }
 
-  @autobind
-  userModel() {
+  userModel = () => {
     let userView = JSON.parse(JSON.stringify(this.state.users));
     let { searchText } = this.state;
     return userView.map((user:any, i:any) => {
@@ -75,8 +73,7 @@ export class UserSearch extends React.Component<any,any> {
     });
   }
 
-  @autobind
-  userSearch(text) {
+  userSearch = (text) => {
     this.setState({ searchText: text });
     if(!text) return this.setState(initialState);
     this.api.graphService
@@ -96,8 +93,7 @@ export class UserSearch extends React.Component<any,any> {
       });
   }
 
-  @autobind
-  attendeeSelect(input, index) {
+  attendeeSelect = (input, index) => {
     let { users } = this.state;
     this.setState({ searchText: users[index].displayName });
     let selectedUser: any = users[index];

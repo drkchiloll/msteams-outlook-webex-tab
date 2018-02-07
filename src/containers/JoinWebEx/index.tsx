@@ -1,9 +1,6 @@
 import * as React from 'react';
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import autobind from 'autobind-decorator';
-import {
-  FlatButton, Card, CardHeader
-} from 'material-ui';
+import { FlatButton } from 'material-ui';
 
 export class JoinWebEx extends React.Component<any,any> {
   constructor(props) {

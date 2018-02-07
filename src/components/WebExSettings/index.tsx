@@ -1,5 +1,4 @@
 import * as React from 'react';
-import autobind from 'autobind-decorator';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import { Drawer, FlatButton, TextField, Checkbox } from 'material-ui';
 import ActionLock from 'material-ui/svg-icons/action/lock';
@@ -25,8 +24,7 @@ export class WebExSettings extends React.Component<any,any> {
     }
   }
 
-  @autobind
-  updateState(action: string) {
+  updateState = (action: string) => {
     let {
       saveBtnLabel,
       saveBtnRefreshIcon,
@@ -158,8 +156,7 @@ export class WebExSettings extends React.Component<any,any> {
     );
   }
 
-  @autobind
-  saveCredentials() {
+  saveCredentials = () => {
     let { webex } = this.props,
         { saveBtnLabel, backGroundColor } = this.state;
     if(saveBtnLabel === 'Continue') {

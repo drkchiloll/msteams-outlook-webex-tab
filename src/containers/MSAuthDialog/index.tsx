@@ -1,5 +1,4 @@
 import * as React from 'react';
-import autobind from 'autobind-decorator';
 import { Msal } from '../../middleware/azure';
 
 microsoftTeams.initialize();
@@ -29,8 +28,7 @@ export class AuthDialog extends React.Component<any, any> {
     }
   }
 
-  @autobind
-  authCallback(accessToken:string) {
+  authCallback = (accessToken:string) => {
     this.setState({ user: Msal.user() });
     microsoftTeams.getContext((context: any) => {
       microsoftTeams.authentication.notifySuccess(

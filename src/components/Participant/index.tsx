@@ -1,10 +1,6 @@
 import * as React from 'react';
 import { Row, Col } from 'react-flexbox-grid';
-import autobind from 'autobind-decorator';
-import {
-  Avatar, IconButton, CardActions, 
-  Paper, ListItem, Divider
-} from 'material-ui';
+import { Avatar, IconButton, Paper, ListItem } from 'material-ui';
 
 export class Participant extends React.Component<any,any> {
   render() {

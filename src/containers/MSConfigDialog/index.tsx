@@ -1,14 +1,7 @@
 import * as React from 'react';
-import * as $ from 'jquery';
-import autobind from 'autobind-decorator';
-
 import * as Properties from '../../../properties.json';
 let { msApp: { contentUrl, websiteUrl, entityId }} = Properties;
-
-import {
-  TextField
-} from 'material-ui';
-
+import { TextField } from 'material-ui';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 
 // Initialize Microsoft Teams Tab Library
@@ -38,10 +31,7 @@ export class ConfigDialog extends React.Component<any, any> {
     microsoftTeams.settings.setValidityState(true);
   }
 
-  @autobind
-  tabChange(e:any, tabName:string) {
-    this.setState({ tabName });
-  }
+  tabChange = (e:any, tabName:string) => this.setState({ tabName });
 
   render() {
     return (

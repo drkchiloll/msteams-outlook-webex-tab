@@ -1,13 +1,11 @@
 import * as React from 'react';
 import {  Grid, Row, Col } from 'react-flexbox-grid';
-import autobind from 'autobind-decorator';
 import { TextField } from 'material-ui';
 
 export class EventForm extends React.Component<any, any> {
   state = { errorText: '', title: '' }
 
-  @autobind
-  meetingProps(e: any, value: string) {
+  meetingProps = (e: any, value: string) => {
     let { name } = e.target;
     this.props.inputChange(name, value);
     if(name==='title') this.setState({ title: value });
@@ -19,13 +17,11 @@ export class EventForm extends React.Component<any, any> {
     }
   }
 
-  @autobind
-  titleFocus() {
+  titleFocus = () => {
     if(this.state.errorText) this.setState({ errorText: '' });
   }
 
-  @autobind
-  titleBlur() {
+  titleBlur = () => {
     if(!this.state.title)
       this.setState({ errorText: 'This Field is Required' });
   }

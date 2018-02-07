@@ -1,5 +1,4 @@
 import * as React from 'react';
-import autobind from 'autobind-decorator';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import { Paper, FlatButton, Divider, Subheader } from 'material-ui';
 import * as Properties from '../../../properties.json';
@@ -21,13 +20,11 @@ export class AdminConsent extends React.Component<any, any> {
       `${clientId}&redirect_uri=${redirectUri}&state=12345`;
   }
 
-  @autobind
-  execConsent() {
+  execConsent = () => {
     window.open(this.urlBuilder(), 'Consent Request');
   }
 
-  @autobind
-  calculateImgSize() {
+  calculateImgSize = () => {
     const { innerHeight, innerWidth } = window;
     if(innerHeight <= 425) {
       this.setState({img: {height: 250, width: 150}});
