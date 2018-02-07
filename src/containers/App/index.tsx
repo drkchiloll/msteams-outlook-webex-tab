@@ -15,8 +15,7 @@ import {
   Dialog, FlatButton, Menu
 } from 'material-ui';
 import {
-  EventForm, EventDates, WebExSettings,
-  WebExMeetNowDialog, UserSearch, Participant
+  WebExSettings, WebExMeetNowDialog, ScheduleMeeting
 } from '../../components';
 
 const { msApp: { baseUrl } } = Properties;
@@ -275,97 +274,33 @@ export class App extends React.Component<any,any> {
   }
 
   render() {
-    let { meetNowDialog } = this.state;
-    let meetNow: any;
-    if(meetNowDialog) {
-      meetNow = (
-        <WebExMeetNowDialog
-          api={this.api}
-          dialogOpen={meetNowDialog}
-          webex={this.state.webex}
-          close={this.closeMeetNowDialog} />
-      );
-    } else {
-      meetNow = <div></div>;
-    }
+    const { meetNowDialog, newMeeting, newMeetingBtnLabel } = this.state;
     const admin = JSON.parse(JSON.stringify(this.state.organizer)) || '';
     const attendees = JSON.parse(JSON.stringify(this.state.attendees));
     return (
       <div>
-        <Dialog
-          title='Schedule New Meeting'
-          modal={false}
-          autoDetectWindowHeight={true}
-          autoScrollBodyContent={true}
-          open={this.state.newMeeting.newEvent}
-          style={{
-            position: 'relative', maxWidth: 'none', top: 0
-          }}
-          actions={[
-            <FlatButton
-              label='Cancel'
-              primary={true}
-              onClick={() => {
-                this.eventFormHandler('newEvent', false);
-              }} />,
-            <FlatButton
-              primary={true}
-              disabled={!this.state.newMeeting.title}
-              label={
-                this.state.newMeetingBtnLabel ||
-                <i className='mdi mdi-rotate-right mdi-spin mdi-18px'
-                  style={{
-                    marginLeft: '10px', verticalAlign: 'middle', color: '#673AB7'
-                  }} />
-              }
-              onClick={this.createMeeting} />
-          ]} >
-          <Grid>
-            <EventForm inputChange={this.eventFormHandler} />
-            <EventDates
-              inputChange={this.eventFormHandler}
-              {...this.state.newMeeting}
-              api={this.api} />
-            <Row>
-              <Col xsOffset={6} xs={5}>
-                <div style={{ marginTop: '5px' }}>
-                  <Subheader>Organizer</Subheader>
-                  {
-                    admin ?
-                      <Participant user={admin} />
-                      :
-                      <div></div>
-                  }
-                  <Menu maxHeight={290} >
-                    <Subheader>Participants</Subheader>
-                    {
-                      attendees.length > 0 ?
-                        attendees.map((attendee: any) =>
-                          (<Participant
-                            key={attendee.id}
-                            user={attendee}
-                            remove={this.removeParticipant}
-                          />))
-                        :
-                        null
-                    }
-                  </Menu>
-                </div>
-              </Col>
-            </Row>
-            <Row>
-              <Col sm={12} >
-                <div style={{
-                  position: 'absolute',
-                  top: 285,
-                  width: '37%'
-                }}>
-                  <UserSearch api={this.api} addAttendee={this.addParticipant} />
-                </div>
-              </Col>
-            </Row>
-          </Grid>
-        </Dialog>
+        {
+          meetNowDialog ?
+            <WebExMeetNowDialog api={this.api}
+              dialogOpen={meetNowDialog}
+              webex={this.state.webex}
+              close={this.closeMeetNowDialog} />
+            :
+            null
+        }
+        {
+          newMeeting.newEvent ?
+            <ScheduleMeeting formHandler={this.eventFormHandler}
+              buttonLabel={newMeetingBtnLabel}
+              create={this.createMeeting}
+              add={this.addParticipant}
+              remove={this.removeParticipant}
+              newMeeting={newMeeting}
+              admin={admin}
+              attendees={attendees}
+              api={this.api} /> :
+            null
+        }
         <Dialog title={
           <span className='mdi mdi-cisco-webex mdi-18px'>
             &nbsp;Welcome
@@ -409,7 +344,6 @@ export class App extends React.Component<any,any> {
                     style={{ color: 'white', fontSize: '1.1em' }} />
                 }
                 onClick={this.meetNowActions} />
-                { meetNow }
             </div>
           </Drawer>
         </div>
