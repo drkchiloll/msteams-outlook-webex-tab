@@ -12,9 +12,8 @@ import {
   Dialog, FlatButton, Menu
 } from 'material-ui';
 import {
-  WebExSettings, WebExMeetNowDialog, ScheduleMeeting, NagPopup
+  WebExSettings, WebExMeetNowDialog, ScheduleMeeting, NagPopup, EventsPanel
 } from '../../components';
-
 const { msApp: { baseUrl } } = Properties;
 const socket = openSocket(baseUrl);
 
@@ -49,7 +48,6 @@ export class App extends React.Component<any,any> {
     super(props);
     this.state = {
       webExSettingsEditor: false,
-      evtHtml: this._renderEvents(time.uidates()),
       events: time.uidates(),
       newMeeting: JSON.parse(JSON.stringify(initialState.newMeeting)),
       organizer: null,
@@ -71,10 +69,7 @@ export class App extends React.Component<any,any> {
             this.setState(events);
             this.api.graphService.getEvents();
           } else {
-            this.setState({
-              events,
-              evtHtml: this._renderEvents(events)
-            });
+            this.setState({ events });
           }
         });
     });
@@ -106,8 +101,7 @@ export class App extends React.Component<any,any> {
         events[prop].sort((a: any, b: any) => {
           return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
         });
-        const evtHtml = this._renderEvents(events);
-        this.setState({ events, evtHtml });
+        this.setState({ events });
       }
     });
     // localStorage.clear();
@@ -263,7 +257,8 @@ export class App extends React.Component<any,any> {
 
   render() {
     const {
-      meetNowDialog, newMeeting, newMeetingBtnLabel, choiceDialog, hasSubentityId
+      meetNowDialog, newMeeting, newMeetingBtnLabel,
+      choiceDialog, hasSubentityId, events,
     } = this.state;
     const admin = JSON.parse(JSON.stringify(this.state.organizer)) || '';
     const attendees = JSON.parse(JSON.stringify(this.state.attendees));
@@ -297,7 +292,7 @@ export class App extends React.Component<any,any> {
             docked={true}
             width={285}
             open={true} >
-            { this.state.evtHtml }
+            <EventsPanel events={JSON.parse(JSON.stringify(events))} />
             <RaisedButton
               label='Schedule A Meeting'
               style={{
@@ -355,32 +350,6 @@ export class App extends React.Component<any,any> {
       });
   }
 
-  _renderEvents = (events) => {
-    return (
-      <List>
-        <Subheader>Agenda</Subheader>
-        {
-          Object.keys(events).map((key, i) => {
-            return (
-              <ListItem
-                key={`${i}_listItem`}
-                primaryText={key}
-                initiallyOpen={true}
-                innerDivStyle={{
-                  fontSize: '90%',
-                  marginLeft: '2px'
-                }}
-                style={{ height: 39 }}
-                primaryTogglesNestedList={true}
-                nestedItems={this.nestedEvent(events[key])}
-              />
-            )
-          })
-        }
-      </List>
-    );
-  }
-
   handleWebExInputs = (propName, value) => {
     let { webex, webExAuthResult } = this.state;
     if(propName === 'authResult') {
@@ -407,62 +376,5 @@ export class App extends React.Component<any,any> {
           this.setState({ webExAuthResult: 'unknown error' });
         }
       });
-  }
-
-  nestedEvent = (events) => {
-    if(events.length === 0) {
-      return [(
-        <ListItem
-          primaryText={'No upcoming meetings'}
-          key='upMeet_0'
-          open={true}
-          style={{height: 35}}
-          innerDivStyle={{
-            fontSize: '90%',
-            paddingTop: 10,
-            paddingBottom: 10,
-            marginBottom: 0
-          }} />
-      )];
-    } else {
-      return events.map(evt => {
-        return (
-          <ListItem
-            key={evt.id}
-            value={evt.id}
-            innerDivStyle={{
-              fontSize: '90%',
-              borderLeft: 'solid 4px #673AB7',
-              marginLeft: 30,
-              marginBottom: 10,
-              height: 33
-            }}
-            primaryText={
-              <div style={{top: 8, position: 'absolute'}}>
-                {evt.subject}<br/>
-                { time.eventView(evt.startDate) }
-                {' - ' + time.eventView(evt.endDate) } <br/>
-                <i className='mdi mdi-cisco-webex mdi-18px'
-                  style={{ color: 'rgb(55,103,52)' }} />
-                &nbsp;Cisco WebEx Meeting
-              </div>
-            }
-            rightIconButton={
-              <RaisedButton
-                labelStyle={{ fontSize: '90%' }}
-                disabled={!evt.joinUrl}
-                style={{
-                  marginTop: '15px', marginRight: '10px',
-                  width: '60px', minWidth: '60px'
-                }}
-                label='Join'
-                onClick={() => {
-                  window.open(evt.joinUrl, '_newtab');
-                }} />
-            }
-            secondaryTextLines={2} />
-        );
-      })
-    }
   }
 }
