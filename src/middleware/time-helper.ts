@@ -87,3 +87,5 @@ time.convertZones = {
   PST: 'Pacific Standard Time',
   PDT: 'Pacific Daylight Time'
 };
+
+time.eventView = (date: string) => moment(new Date(date)).format('h:mm a');

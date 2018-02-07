@@ -2,8 +2,6 @@ import * as React from 'react';
 import * as Promise from 'bluebird';
 import * as style from './style.css';
 import autobind from 'autobind-decorator';
-import * as moment from 'moment';
-import * as momenttz from 'moment-timezone';
 import * as openSocket from 'socket.io-client';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import * as Properties from '../../../properties.json';
@@ -472,8 +470,8 @@ export class App extends React.Component<any,any> {
             primaryText={
               <div style={{top: 8, position: 'absolute'}}>
                 {evt.subject}<br/>
-                {moment(new Date(evt.startDate)).format('h:mm a')}
-                {' - ' + moment(new Date(evt.endDate)).format('h:mm a')} <br/>
+                { time.eventView(evt.startDate) }
+                {' - ' + time.eventView(evt.endDate) } <br/>
                 <i className='mdi mdi-cisco-webex mdi-18px'
                   style={{ color: 'rgb(55,103,52)' }} />
                 &nbsp;Cisco WebEx Meeting
