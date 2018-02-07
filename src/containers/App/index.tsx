@@ -265,12 +265,7 @@ export class App extends React.Component<any,any> {
         }
       })
   }
-
-  @autobind
-  closeMeetNowDialog() {
-    this.setState({ meetNowDialog: false });
-  }
-
+  
   render() {
     const {
       meetNowDialog, newMeeting, newMeetingBtnLabel, choiceDialog, hasSubentityId
@@ -284,7 +279,7 @@ export class App extends React.Component<any,any> {
             <WebExMeetNowDialog api={this.api}
               dialogOpen={meetNowDialog}
               webex={this.state.webex}
-              close={this.closeMeetNowDialog} />
+              close={() => this.setState({ meetNowDialog: false })} />
             :
             null
         }
@@ -337,12 +332,11 @@ export class App extends React.Component<any,any> {
           </Drawer>
         </div>
         <WebExSettings
+          toggleSettings={(isOpen)=>this.setState({webExSettingsEditor: isOpen})}
           api={this.api}
           webex={this.state.webex}
-          open={this.openWebExSettings}
           save={this.saveWebExSettings}
           authResult={this.state.webExAuthResult}
-          close={this.closeWebExSettings}
           onWebExChange={this.handleWebExInputs}
           webExSettingsEditor={this.state.webExSettingsEditor} />
       </div>
@@ -410,11 +404,6 @@ export class App extends React.Component<any,any> {
   }
 
   @autobind
-  openWebExSettings() {
-    this.setState({ webExSettingsEditor: true });
-  }
-
-  @autobind
   saveWebExSettings() {
     let { webex } = this.state;
     return this.api
@@ -431,11 +420,6 @@ export class App extends React.Component<any,any> {
           this.setState({ webExAuthResult: 'unknown error' });
         }
       });
-  }
-
-  @autobind
-  closeWebExSettings() {
-    this.setState({ webExSettingsEditor: false });
   }
 
   @autobind

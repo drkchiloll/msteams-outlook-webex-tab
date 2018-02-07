@@ -1,18 +1,7 @@
 import * as React from 'react';
 import autobind from 'autobind-decorator';
-import * as openSocket from 'socket.io-client';
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import {
-  Drawer, FlatButton,
-  RaisedButton, TextField,
-  Checkbox
-} from 'material-ui';
-
-import {
-  WebExMeetNowDialog
-} from '../MeetNow';
-
-
+import { Drawer, FlatButton, TextField, Checkbox } from 'material-ui';
 import ActionLock from 'material-ui/svg-icons/action/lock';
 import ActionLockOpen from 'material-ui/svg-icons/action/lock-open';
 
@@ -81,7 +70,7 @@ export class WebExSettings extends React.Component<any,any> {
             right:0,
             color: 'rgb(55,103,52)'
           }}
-          onClick={this.props.open} />
+          onClick={()=>this.props.toggleSettings(true)} />
         <Drawer
           open={webExSettingsEditor}
           openSecondary={true}
@@ -143,7 +132,7 @@ export class WebExSettings extends React.Component<any,any> {
                   style={{ marginTop: '25px', marginLeft: '5px' }}
                   label='Cancel'
                   hoverColor='#FFCDD2'
-                  onClick={this.props.close} />
+                  onClick={()=>this.props.toggleSettings(false)} />
               </Col>
               <Col sm={5}>
                 <FlatButton
@@ -179,7 +168,8 @@ export class WebExSettings extends React.Component<any,any> {
         backGroundColor: 'white',
         saveBtnLabel: 'Save'
       });
-      this.props.close();
+      this.props.toggleSettings(false);
+      // this.props.close();
     } else if(saveBtnLabel === 'Save') {
       this.updateState('checking');
       this.props.save();
