@@ -1,5 +1,6 @@
 import * as moment from 'moment';
 import * as momenttz from 'moment-timezone';
+import { isDuration } from 'moment';
 
 export interface TimeHelper {
   uiFormat: string;
@@ -89,3 +90,22 @@ time.convertZones = {
 };
 
 time.eventView = (date: string) => moment(new Date(date)).format('h:mm a');
+
+time.meetingDuration = function(startTime, durationString) {
+  const formattedDate = moment(this.formatTime(
+    moment().format('YYYY-MM-DD'), startTime
+  ));
+  if(durationString === '1 hour') durationString = '1 hours';
+  if(durationString === '1.5 hours') durationString = '90 minutes';
+  return formattedDate.add(
+    parseInt(durationString.split(' ')[0], 10), durationString.split(' ')[1]
+  ).format('h:mm a');
+};
+
+time.now = moment();
+
+time.addMinutes = function(minutes) {
+  return moment(this.now).add(minutes,'minutes').format('h:mm a')
+};
+
+time.materialDatePickFormat = (date) => moment(date).format('MM/DD/YYYY');
