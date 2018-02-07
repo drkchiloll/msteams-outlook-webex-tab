@@ -148,7 +148,7 @@ export class App extends React.Component<any,any> {
                   accessToken: result,
                   signedInUser: this.api.signedInUser,
                   context: JSON.parse(localStorage.getItem('msTeamsContext'))
-                });
+                }).then(this.credCheck);
               } else {
                 return this.callTeams({ url: '/auth' });
               }
