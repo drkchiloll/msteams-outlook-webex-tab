@@ -15,7 +15,7 @@ import {
   Dialog, FlatButton, Menu
 } from 'material-ui';
 import {
-  WebExSettings, WebExMeetNowDialog, ScheduleMeeting
+  WebExSettings, WebExMeetNowDialog, ScheduleMeeting, NagPopup
 } from '../../components';
 
 const { msApp: { baseUrl } } = Properties;
@@ -274,7 +274,9 @@ export class App extends React.Component<any,any> {
   }
 
   render() {
-    const { meetNowDialog, newMeeting, newMeetingBtnLabel } = this.state;
+    const {
+      meetNowDialog, newMeeting, newMeetingBtnLabel, choiceDialog, hasSubentityId
+    } = this.state;
     const admin = JSON.parse(JSON.stringify(this.state.organizer)) || '';
     const attendees = JSON.parse(JSON.stringify(this.state.attendees));
     return (
@@ -301,27 +303,16 @@ export class App extends React.Component<any,any> {
               api={this.api} /> :
             null
         }
-        <Dialog title={
-          <span className='mdi mdi-cisco-webex mdi-18px'>
-            &nbsp;Welcome
-          </span>}
-          open={this.state.choiceDialog && !this.state.hasSubentityId}>
-          <br/>
-          This application requires Authorization and Authentication to your Office 365 Organization
-          with certain permissions granted such as Reading User Data and the ability to Create Events in Outlook.
-          This action also enables the Application to get Team members and/or lookup and add other users within
-          your organization to a Meeting; If you have previously Authenticated and your Credentials haven't expired
-          you will not be required to Authenticate again until such time your access token expires.
-        </Dialog>
+        { choiceDialog && !hasSubentityId ? <NagPopup /> : null }
         <div style={{
-          display: this.state.choiceDialog ? 'none' : 'inline-block',
+          display: choiceDialog ? 'none' : 'inline-block',
           fontSize: '90%'
         }}>
           <Drawer
             docked={true}
             width={285}
             open={true} >
-            {this.state.evtHtml}
+            { this.state.evtHtml }
             <div style={{ display: this.state.events ? 'inline-block': 'none' }}>
               <RaisedButton
                 label='Schedule A Meeting'

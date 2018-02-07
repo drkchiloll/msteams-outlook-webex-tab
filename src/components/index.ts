@@ -5,3 +5,4 @@ export { WebExMeetNowDialog } from './MeetNow';
 export { UserSearch } from './UserSearch';
 export { Participant } from './Participant';
 export { ScheduleMeeting } from './ScheduleMeeting';
+export { NagPopup } from './NagPopup';
