@@ -1,7 +1,6 @@
 import * as React from 'react';
 import * as Promise from 'bluebird';
 import * as style from './style.css';
-import autobind from 'autobind-decorator';
 import * as openSocket from 'socket.io-client';
 import { Grid, Row, Col } from 'react-flexbox-grid';
 import * as Properties from '../../../properties.json';
@@ -114,24 +113,21 @@ export class App extends React.Component<any,any> {
     // localStorage.clear();
   }
 
-  @autobind
-  teamsSuccess(result) {
+  teamsSuccess = (result) => {
     const { accessToken, signedInUser, context } = JSON.parse(result);
     return this.authActions({
       accessToken, signedInUser, context
     }).then(this.promiseHandler);
   }
 
-  @autobind
-  teamsFailure(e) {
+  teamsFailure = (e) => {
     Msal.logout();
     setTimeout(() => {
       this.credCheck()
     }, 500);
   }
 
-  @autobind
-  credCheck() {
+  credCheck = () => {
     let { webExSettingsEditor, webex } = this.state;
     if(!this.api.webex) {
       webExSettingsEditor = true;
@@ -165,8 +161,7 @@ export class App extends React.Component<any,any> {
     }
   }
 
-  @autobind
-  authActions({accessToken, signedInUser='', context={}}) {
+  authActions = ({accessToken, signedInUser='', context={}}) => {
     this.api.setToken(accessToken);
     if(signedInUser) this.api.setUser(signedInUser);
     if(Object.keys(context).length > 0) {
@@ -176,8 +171,7 @@ export class App extends React.Component<any,any> {
     return Promise.resolve(null);
   }
 
-  @autobind
-  promiseHandler() {
+  promiseHandler = () => {
     let promises = [];
     if(this.state.webex.webExId) {
       promises.push(this.api.graphService.getEvents());
@@ -188,8 +182,7 @@ export class App extends React.Component<any,any> {
     if(promises.length > 0) return Promise.all(promises);
   }
 
-  @autobind
-  scheduleEvent() {
+  scheduleEvent = () => {
     let { organizer, newMeeting } = this.state;
     newMeeting.newEvent = true;
     if(!organizer) {
@@ -216,8 +209,7 @@ export class App extends React.Component<any,any> {
     }
   }
 
-  @autobind
-  eventFormHandler(name, value) {
+  eventFormHandler = (name, value) => {
     let { newMeeting } = this.state;
     newMeeting[name] = value;
     if(name === 'newEvent' && !value) {
@@ -226,15 +218,13 @@ export class App extends React.Component<any,any> {
     this.setState({ newMeeting });
   }
 
-  @autobind
-  addParticipant(attendee) {
+  addParticipant = (attendee) => {
     let { attendees } = this.state;
     attendees.unshift(attendee);
     this.setState({ attendees });
   }
 
-  @autobind
-  removeParticipant(attendeeId) {
+  removeParticipant = (attendeeId) => {
     let { attendees } = this.state;
     let idx = attendees.findIndex(attendee =>
       attendee.id === attendeeId);
@@ -242,8 +232,7 @@ export class App extends React.Component<any,any> {
     this.setState({ attendees });
   }
 
-  @autobind
-  meetNowActions() {
+  meetNowActions = () => {
     this.api.graphService
       .getMe()
       .then((resp: any) => {
@@ -344,11 +333,11 @@ export class App extends React.Component<any,any> {
     );
   }
 
-  @autobind
-  createMeeting() {
+  createMeeting = () => {
     this.setState({ newMeetingBtnLabel: null });
     let { newMeeting, attendees } = JSON.parse(JSON.stringify(this.state));
-    let outlookEvent: any = this.api.graphService.generateMeetingRequest(newMeeting, attendees);
+    let outlookEvent: any =
+      this.api.graphService.generateMeetingRequest(newMeeting, attendees);
     const webExEvent: any = this.api.webExGenerateMeetingRequest({
       startDate: outlookEvent.start.dateTime,
       subject: outlookEvent.subject,
@@ -366,8 +355,7 @@ export class App extends React.Component<any,any> {
       });
   }
 
-  @autobind
-  _renderEvents(events) {
+  _renderEvents = (events) => {
     return (
       <List>
         <Subheader>Agenda</Subheader>
@@ -393,8 +381,7 @@ export class App extends React.Component<any,any> {
     );
   }
 
-  @autobind
-  handleWebExInputs(propName, value) {
+  handleWebExInputs = (propName, value) => {
     let { webex, webExAuthResult } = this.state;
     if(propName === 'authResult') {
       this.setState({ webExAuthResult: '' });
@@ -404,8 +391,7 @@ export class App extends React.Component<any,any> {
     }
   }
 
-  @autobind
-  saveWebExSettings() {
+  saveWebExSettings = () => {
     let { webex } = this.state;
     return this.api
       .webExAuthentication(webex)
@@ -423,8 +409,7 @@ export class App extends React.Component<any,any> {
       });
   }
 
-  @autobind
-  nestedEvent(events) {
+  nestedEvent = (events) => {
     if(events.length === 0) {
       return [(
         <ListItem
