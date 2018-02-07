@@ -2,7 +2,6 @@ import * as React from 'react';
 import * as Promise from 'bluebird';
 import * as style from './style.css';
 import * as openSocket from 'socket.io-client';
-import { Grid, Row, Col } from 'react-flexbox-grid';
 import * as Properties from '../../../properties.json';
 import { Api, apiEmitter, time, Msal } from '../../middleware';
 import { Drawer } from 'material-ui';
