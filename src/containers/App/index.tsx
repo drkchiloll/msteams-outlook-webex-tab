@@ -31,6 +31,7 @@ const initialState = {
 };
 
 export class App extends React.Component<any,any> {
+  public api: Api;
   constructor(props) {
     super(props);
     this.state = {
@@ -44,6 +45,7 @@ export class App extends React.Component<any,any> {
       webExAuthResult: '',
       meetNowDialog: false,
       choiceDialog: true,
+      hasToken: false,
       hasSubentityId: true
     };
     this.api = new Api();
@@ -78,9 +80,8 @@ export class App extends React.Component<any,any> {
     });
   }
 
-  api: Api;
-
   componentWillMount() {
+    if(this.api.token) this.setState({ hasToken: true });
     microsoftTeams.getContext((context: microsoftTeams.Context) => {
       if(context.subEntityId) {
         window.location.pathname = '/join-webex';
@@ -94,7 +95,7 @@ export class App extends React.Component<any,any> {
     setTimeout(() => {
       this.setState({ choiceDialog: false });
       this.credCheck();
-    }, 1500);
+    }, 2000);
     apiEmitter.on('newevent', ({ prop, event }) => {
       let { events } = this.state;
       if(event.isCancelled) {
@@ -125,6 +126,8 @@ export class App extends React.Component<any,any> {
     }, 500);
   }
 
+  getMe = () => this.api.graphService.getMe();
+
   credCheck = () => {
     let { webExSettingsEditor, webex } = this.state;
     if(!this.api.webex) {
@@ -136,8 +139,7 @@ export class App extends React.Component<any,any> {
     if(!this.api.token) {
       this.callTeams({ url: '/auth' });
     } else {
-      return this.api.graphService
-        .getMe()
+      return this.getMe()
         .then((resp: any) => {
           if(resp && resp.status) {
             // alert('Attempt to retrieve Token Silently');
@@ -184,8 +186,7 @@ export class App extends React.Component<any,any> {
     let { organizer, newMeeting } = this.state;
     newMeeting.newEvent = true;
     if(!organizer) {
-      return this.api.graphService
-        .getMe()
+      return this.getMe()
         .then((me) => {
           if(me.status) {
             return this.credCheck().then((result) => {
@@ -231,8 +232,7 @@ export class App extends React.Component<any,any> {
   }
 
   meetNowActions = () => {
-    this.api.graphService
-      .getMe()
+    return this.getMe()
       .then((resp: any) => {
         if(resp.status) {
           Msal.silent().then((result:any) => {
@@ -262,7 +262,7 @@ export class App extends React.Component<any,any> {
     const {
       meetNowDialog, newMeeting, newMeetingBtnLabel,
       choiceDialog, hasSubentityId, events,
-      organizer, attendees
+      organizer, attendees, hasToken
     } = this.state;
     const {
       admin, participants, meetings
@@ -288,7 +288,7 @@ export class App extends React.Component<any,any> {
               attendees={participants}
               api={this.api} /> :
           choiceDialog && !hasSubentityId ?
-            <NagPopup /> : 
+            <NagPopup hasToken={hasToken} /> :
             null
         }
         <div style={this.styles().drawer}>
