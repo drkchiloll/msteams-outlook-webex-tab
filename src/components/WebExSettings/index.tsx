@@ -72,8 +72,8 @@ export class WebExSettings extends React.Component<any,any> {
         <Drawer
           open={webExSettingsEditor}
           openSecondary={true}
-          containerStyle={{ height: 235 }}
-          width={275}>
+          containerStyle={{ height: 275 }}
+          width={285}>
           <div style={{marginLeft:'20px'}}>
             <Row middle='xs'>
               <Col xs={12}>
@@ -82,6 +82,14 @@ export class WebExSettings extends React.Component<any,any> {
                     style={{ color: 'rgb(55,103,52)' }} />
                   <strong style={{fontSize:'110%', marginBottom:'-20px'}}> Cisco WebEx Settings </strong>
                 </div>
+              </Col>
+            </Row>
+            <Row>
+              <Col xs={10}>
+                <TextField
+                  fullWidth={true}
+                  hintText='WebEx Site Name'
+                  onChange={(e, val) => {}} />
               </Col>
             </Row>
             <Row>
@@ -166,7 +174,6 @@ export class WebExSettings extends React.Component<any,any> {
         saveBtnLabel: 'Save'
       });
       this.props.toggleSettings(false);
-      // this.props.close();
     } else if(saveBtnLabel === 'Save') {
       this.updateState('checking');
       this.props.save();
