@@ -9,7 +9,6 @@ import {
 } from 'material-ui';
 
 const initialState = {
-  members: null,
   agenda: '',
   launchBtn: 'LAUNCH',
   attendees: [],
@@ -21,7 +20,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
   state = JSON.parse(JSON.stringify(initialState));
 
   componentWillMount() {
-    if(this.props.dialogOpen) this.getTeam();
+    if(this.props.dialogOpen) this.getMe();
   }
 
   removeParticipant = (attendeeId) => {
@@ -73,7 +72,6 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
 
   getTeam = () => {
     const api: Api = this.props.api;
-    this.setState({ dialogOpen: true });
     api.graphService.getTeam()
       .then((members:any) => {
         let organizer = members.find(member => member.me);
@@ -81,14 +79,34 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
           members.findIndex(mem => mem.me), 1
         );
         const attendees = members;
-        this.setState({ organizer, members, attendees });
+        this.setState({ organizer, attendees });
       });
+  }
+
+  getMe = () => this.props.api.graphService.getMe().then((me:any) =>
+    this.props.api.graphService.getUserPhoto(me.id).then((photo: any) => {
+      me.photo = photo;
+      this.setState({ organizer: me })
+    })
+  )
+
+  styles: any = {
+    mainDiv: { position: 'relative' },
+    dialog: { height: 600 },
+    agentFloatingLabel: { fontSize: '1.5em' },
+    userPanel: { marginLeft: '75px' },
+    userSearch: {
+      position: 'absolute',
+      top: 215,
+      width: '37%',
+      marginTop: 0
+    }
   }
 
   render() {
     const { attendees, organizer } = this.state;
     return (
-      <div style={{ position: 'relative' }}>
+      <div style={this.styles.mainDiv}>
         <Dialog title='Cisco WebEx Instant Meeting'
           actions={[
             <FlatButton label='Cancel' primary={true} onClick={() => {
@@ -106,9 +124,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
           ]}
           modal={false}
           open={true}
-          style={{
-            maxWidth: 'none', width: '100%', height: 600
-          }}
+          style={this.styles.dialog}
           autoScrollBodyContent={true} >
           <Grid>
             <Row>
@@ -116,19 +132,21 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
                 <TextField
                   value={this.state.agenda}
                   floatingLabelText='Meeting Agenda'
-                  floatingLabelFocusStyle={{fontSize: '1.5em'}}
+                  floatingLabelFocusStyle={this.styles.agentFloatingLabel}
                   hintText='Optional Agenda Description'
                   multiLine={true}
                   fullWidth={true}
-                  autoFocus
                   onChange={(e, value) => {
                     this.setState({ agenda: value });
                   }}
                   rows={3} />
               </Col>
               <Col sm={7}>
-                <div style={{ marginLeft: '75px' }}>
-                  <div style={{ marginLeft: '20px', display: organizer.id ? 'none': 'inline' }}>
+                <div style={this.styles.userPanel}>
+                  <div style={{
+                    display: organizer.id?'none':'inline',
+                    marginLeft:'20px'
+                  }}>
                     <CircularProgress size={15} />
                   </div>
                   <Subheader> Organizer </Subheader>
@@ -146,12 +164,7 @@ export class WebExMeetNowDialog extends React.Component<any,any> {
             </Row>
             <Row>
               <Col sm={12}>
-                <div style={{
-                  position: 'absolute',
-                  top: 215,
-                  width: '37%',
-                  marginTop: 0
-                }}>
+                <div style={this.styles.userSearch}>
                   <UserSearch api={this.props.api} addAttendee={this.addParticipant} />
                 </div>
               </Col>
