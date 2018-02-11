@@ -8,8 +8,12 @@ import { MeetingService } from '../models';
 export const webExController = (() => {
   let cntrler: any = {};
 
-  cntrler.createInstance = function({ webExId, webExPassword }) {
-    return new WebEx({ webExID: webExId, password: webExPassword });
+  cntrler.createInstance = function({webExSite='', webExId, webExPassword }) {
+    return new WebEx({
+      webExSite,
+      webExID: webExId,
+      password: webExPassword
+    });
   };
 
   cntrler.requestHandler = function(args) {
@@ -22,8 +26,7 @@ export const webExController = (() => {
   };
 
   cntrler.authenticate = function(req: Request, res: Response) {
-    let { webExId, webExPassword } = req.body;
-    const client = cntrler.createInstance({ webExId, webExPassword });
+    const client = cntrler.createInstance(req.body);
     client
       .userService
       .authenticate()
@@ -80,6 +83,7 @@ export const webExController = (() => {
     return client
       .meetingsService
       .createInstantly({
+        webExSite: webex.webExSite,
         webExId: webex.webExId,
         webExPassword: webex.webExPassword,
         agenda: meeting.agenda

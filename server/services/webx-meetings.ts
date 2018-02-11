@@ -106,8 +106,8 @@ export function meetingsServFactory(webex: WebEx) {
     });
   };
 
-  service.createInstantly = function({webExId='', webExPassword='', agenda=''}) {
-    const baseUrl = 'https://wwtatc.webex.com/wwtatc';
+  service.createInstantly = function({webExId='', webExPassword='', agenda='', webExSite=''}) {
+    const baseUrl = `https://${webExSite}.webex.com/${webExSite}`;
     let loginUrl =  `${baseUrl}/p.php?`,
         meetingUrl = `${baseUrl}/m.php?`,
         loginBody = {

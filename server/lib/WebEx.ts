@@ -11,7 +11,7 @@ import { MeetingService } from '../models/WebEx';
 const { Builder, parseString } = xml2js,
       xmlBuilder = new Builder({headless: true}),
       { webex: {
-        headers, uri, siteName, xsi, schema
+        headers, uri, siteName, xsi, schema, baseXmlUrl
       } } = Properties;
 
 export interface Credentials {
@@ -36,10 +36,12 @@ export class WebEx {
   securityContext: Credentials;
   userService: UserServiceFactory;
   meetingsService: MeetingService;
-  constructor({webExID, password}: any) {
+  baseXmlUrl: string;
+  constructor({webExSite, webExID, password}: any) {
     this.securityContext = {
-      securityContext: { webExID, password, siteName }
+      securityContext: { webExID, password, siteName: webExSite }
     };
+    this.baseXmlUrl = baseXmlUrl.replace('%sitename%', webExSite);
     this.userService = userServFactory(this);
     this.meetingsService = meetingsServFactory(this);
   };
@@ -58,9 +60,19 @@ export class WebEx {
         let meetUrl = meetingUrl + meetingForm;
         return instrequest.get(meetUrl)
       }).then((resp) => {
-        let successFail = resp.data.match(/SUCCESS\\x26MK\\x3d(.\d+)\\x/);
-        if(!successFail) return null;
-        else return { meetingKey: successFail[1] };
+        const { data } = resp;
+        let meetingKey:any;
+        if(data.match(/var\smeetingKey\s\=\'(.*)\'/)) {
+          return {
+            meetingKey: data.match(/var\smeetingKey\s\=\'(.*)\'/)[1]
+          };
+        } else if(data.match(/SUCCESS\\x26MK\\x3d(.\d+)\\x/)) {
+          return {
+            meetingKey: data.match(/SUCCESS\\x26MK\\x3d(.\d+)\\x/)[1]
+          };
+        } else {
+          return null;
+        }
       });
   };
 
@@ -82,7 +94,7 @@ export class WebEx {
 
   _axiosrequest({body}) {
     return axios({
-      url: uri,
+      url: this.baseXmlUrl,
       method: 'post',
       headers,
       data: body
