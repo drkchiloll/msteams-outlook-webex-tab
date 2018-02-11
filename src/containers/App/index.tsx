@@ -46,7 +46,8 @@ export class App extends React.Component<any,any> {
       meetNowDialog: false,
       choiceDialog: true,
       hasToken: false,
-      hasSubentityId: true
+      hasSubentityId: true,
+      disableSchedule: true
     };
     this.api = new Api();
     this.api.initialize();
@@ -103,12 +104,16 @@ export class App extends React.Component<any,any> {
       }
       if(!events[prop].find(({ id }) => id === event.id)) {
         events[prop].push(event);
-        events[prop].sort((a: any, b: any) => {
-          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        });
+        events[prop].sort((a: any, b: any) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        );
         this.setState({ events });
       }
     });
+    apiEmitter.on('event-service-success', () =>
+      this.setState({ disableSchedule: false }))
+    apiEmitter.on('error_event', () =>
+      this.setState({ meetNowDialog: true, disableSchedule: true }));
     // localStorage.clear();
   }
 
@@ -262,7 +267,8 @@ export class App extends React.Component<any,any> {
     const {
       meetNowDialog, newMeeting, newMeetingBtnLabel,
       choiceDialog, hasSubentityId, events,
-      organizer, attendees, hasToken
+      organizer, attendees, hasToken, disableSchedule,
+      webex
     } = this.state;
     const {
       admin, participants, meetings
@@ -293,9 +299,12 @@ export class App extends React.Component<any,any> {
         }
         <div style={this.styles().drawer}>
           <Drawer docked={true} width={285} open={true} >
-            <EventsPanel events={meetings} />
-            <ScheduleButton schedule={this.scheduleEvent} />
-            <MeetNowButton webexId={this.state.webex.webExId}
+            <EventsPanel events={meetings}/>
+            <ScheduleButton
+              schedule={this.scheduleEvent}
+              disabled={disableSchedule} />
+            <MeetNowButton
+              webexId={webex.webExId}
               meetNow={this.meetNowActions} />
           </Drawer>
         </div>
