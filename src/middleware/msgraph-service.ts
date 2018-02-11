@@ -13,11 +13,11 @@ const { msApp: {
 export function graphServiceFactory(api: Api) {
   const graphBeta = axios.create({ baseURL: uri });
   graphBeta.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
-  graphBeta.defaults.validateStatus = (status) => status >= 200 && status <= 500;
+  graphBeta.defaults.validateStatus = (status) => status >= 200 && status <= 505;
   const graphApi = axios.create({ baseURL: webApi });
   graphApi.defaults.headers.common['Authorization'] = `Bearer ${api.token}`;
   graphApi.defaults.validateStatus = (status) =>
-    status >= 200 && status <= 500;
+    status >= 200 && status <= 505;
 
   const _errors = (status) => {
     // alert(status);
@@ -25,6 +25,9 @@ export function graphServiceFactory(api: Api) {
     switch(status) {
       case 401:
         resolver = { status };
+        break;
+      case 503: // Service Unavailable
+        resolver = { message: 'service unavailable' };
         break;
       default:
         resolver = null;
@@ -44,7 +47,7 @@ export function graphServiceFactory(api: Api) {
   graph._axiosrequest = function(requestor: AxiosInstance, options) {
     let requestoptions: any = _options(options);
     if(options.path.includes('photo')) requestoptions['responseType'] = 'arraybuffer';
-    if(options.path === '/beta/me/events' && options.method === 'get') {
+    if(options.path === '/me/events' && options.method === 'get') {
       const transformRequest = [(data, headers) => {
         headers.common['Prefer'] = 'outlook.timezone="'+
           time.convertZones[momenttz.tz(momenttz.tz.guess()).format('z')]+'"';
@@ -57,6 +60,10 @@ export function graphServiceFactory(api: Api) {
       .then((resp: any) => {
         if(resp.status >= 400) {
           // if(resp.status===401 || resp.status===403) alert(JSON.stringify(resp.data));
+          if(options.path.includes('events')) {
+            apiEmitter.emit('error_event', {});
+            return null;
+          }
           return _errors(resp.status);
         } else return resp.data;
       });
@@ -191,13 +198,13 @@ export function graphServiceFactory(api: Api) {
       .subtract(1,'days')
       .format('YYYY-MM-DDTHH:mm:ss');
     let events: any = time.uidates();
-    return this._axiosrequest(graphBeta, {
-      path: '/beta/me/events',
+    return this._axiosrequest(graphApi, {
+      path: '/me/events',
       method: 'get',
       params: {
-        filter: `start/dateTime ge '${eventDateFilter}'`,
-        orderby: 'end/dateTime',
-        select: this.eventPropertyFilter()
+        '$filter': `start/dateTime ge '${eventDateFilter}'`,
+        '$orderby': 'end/dateTime',
+        '$select': this.eventPropertyFilter()
       }
     }).then(({value}) => {
       if(value && value.length > 0) {
@@ -243,6 +250,8 @@ export function graphServiceFactory(api: Api) {
           }
           return;
         });
+      } else if(value && value.length === 0) {
+        apiEmitter.emit('event-service-success');
       }
     });
   };
