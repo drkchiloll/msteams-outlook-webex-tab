@@ -41,7 +41,7 @@ export class App extends React.Component<any,any> {
       organizer: null,
       attendees: [],
       newMeetingBtnLabel: 'Schedule Meeting',
-      webex: { webExId: '', webExPassword: '' },
+      webex: { webExSite: '', webExId: '', webExPassword: '' },
       webExAuthResult: '',
       meetNowDialog: false,
       choiceDialog: true,
