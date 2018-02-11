@@ -38,7 +38,7 @@ export class Msal extends EventEmitter {
   }
 
   static redirect(user?) {
-    client.loginRedirect(['openid'], `login_hint=${user}`);
+    client.loginRedirect(scopes, `login_hint=${user}`);
   };
 
   static silent() {
@@ -49,7 +49,8 @@ export class Msal extends EventEmitter {
  
   static getToken() {
     const user = client.getUser();
-    return client.acquireTokenSilent(scopes, null, user);
+    return client.acquireTokenSilent(scopes, null, user)
+      .catch((err) => alert(JSON.stringify(err)))
   };
 
   static user() {
