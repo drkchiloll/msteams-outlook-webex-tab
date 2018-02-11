@@ -17,6 +17,7 @@ const {
 } = Properties;
 
 export interface WebExAuth {
+  webExSite: string;
   webExId: string;
   webExPassword: string;
 }
@@ -82,7 +83,7 @@ export class Api {
     try {
       this.webex = JSON.parse(localStorage.getItem('webex'));
     } catch(e) {
-      this.webex = { webExId: '', webExPassword: '' }
+      this.webex = { webExSite: '', webExId: '', webExPassword: '' };
     }
     try {
       let {
