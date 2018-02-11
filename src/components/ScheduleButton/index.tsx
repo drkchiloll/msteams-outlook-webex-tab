@@ -10,9 +10,10 @@ const styles: any = {
   }
 };
 
-export const ScheduleButton = ({schedule}) =>
+export const ScheduleButton = ({schedule, disabled}) =>
   <RaisedButton label='Schedule a Meeting'
     style={styles.button}
+    disabled={disabled}
     fullWidth={true}
     primary={true}
     labelPosition='after'
