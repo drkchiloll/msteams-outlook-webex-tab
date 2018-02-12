@@ -11,7 +11,8 @@ export class WebExSettings extends React.Component<any,any> {
     saveBtnRefreshIcon: false,
     backGroundColor: 'white',
     webExMeetingBtnLabel: 'MEET NOW',
-    meetNowDialog: false
+    meetNowDialog: false,
+    errorText: ''
   };
 
   componentWillReceiveProps(props) {
@@ -88,10 +89,17 @@ export class WebExSettings extends React.Component<any,any> {
               <Col xs={10}>
                 <TextField
                   fullWidth={true}
+                  errorText={this.state.errorText}
                   value={webex.webExSite}
                   hintText='WebEx Site Name'
                   onChange={(e, val) =>
-                    this.props.onWebExChange('webExSite', val)} />
+                    this.props.onWebExChange('webExSite', val)}
+                  onBlur={() => {
+                    if(!webex.webExSite) this.setState({ errorText: 'This field is required' })
+                  }}
+                  onFocus={() => {
+                    if(this.state.errorText) this.setState({ errorText: '' });
+                  }} />
               </Col>
             </Row>
             <Row>
@@ -145,6 +153,7 @@ export class WebExSettings extends React.Component<any,any> {
               <Col sm={5}>
                 <FlatButton
                   fullWidth={true}
+                  disabled={!webex.webExSite || !webex.webExId || !webex.webExPassword}
                   style={{ marginTop: '25px', marginLeft: '5px' }}
                   backgroundColor={this.state.backGroundColor}
                   icon={
