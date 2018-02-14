@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Subheader, List, ListItem, RaisedButton } from 'material-ui';
-import { time } from '../../middleware';
+import { Time } from '../../middleware';
 
 export const EventsPanel = ({ events }) => {
   return (
@@ -41,8 +41,8 @@ export const EventsPanel = ({ events }) => {
                   primaryText={
                     <div style={{ top: 8, position: 'absolute' }}>
                       {event.subject}<br />
-                      {time.eventView(event.startDate)}
-                      {' - ' + time.eventView(event.endDate)} <br />
+                      {Time.eventView(event.startDate)}
+                      {' - ' + Time.eventView(event.endDate)} <br />
                       <i className='mdi mdi-cisco-webex mdi-18px'
                         style={{ color: 'rgb(55,103,52)' }} />
                       &nbsp;Cisco WebEx Meeting
