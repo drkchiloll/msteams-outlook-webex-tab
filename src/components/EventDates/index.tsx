@@ -29,6 +29,7 @@ export class EventDates extends React.Component<any, any> {
 
   render() {
     let { startTime, endTime, startDate, endDate, api } = this.props;
+    // alert(startTime);
     return (
       <div style={{ position: 'relative' }}>
         <Row>
@@ -59,7 +60,7 @@ export class EventDates extends React.Component<any, any> {
                 <SelectField
                   value={(() => {
                     return startTime || (() => {
-                      let remainder = 30 - (Time.now.minute() % 30);
+                      let remainder = 30 - (Time.MOMENT().minute() % 30);
                       return this.props.inputChange(
                         'startTime',
                         Time.addMinutes(remainder)
@@ -100,7 +101,7 @@ export class EventDates extends React.Component<any, any> {
                 <SelectField
                   value={(() => {
                     return endTime || (() => {
-                      let remainder = 30 - Time.now.minute() % 30;
+                      let remainder = 30 - Time.MOMENT().minute() % 30;
                       return this.props.inputChange(
                         'endTime',
                         Time.addMinutes(remainder + 30)
