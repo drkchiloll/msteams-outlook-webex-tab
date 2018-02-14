@@ -7,3 +7,4 @@ export {
   WebExAuth, WebExCreateMeetingParams,
   apiEmitter
 } from './Api';
+export { Time } from './Time';
