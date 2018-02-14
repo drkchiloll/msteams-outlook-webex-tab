@@ -3,6 +3,8 @@ import { Grid, Row, Col } from 'react-flexbox-grid';
 import { time } from '../../middleware';
 import { DatePicker, MenuItem, SelectField } from 'material-ui';
 
+import { Time } from '../../middleware/Time';
+
 export class EventDates extends React.Component<any, any> {
   constructor(props) {
     super(props);
@@ -22,7 +24,7 @@ export class EventDates extends React.Component<any, any> {
   durationChangeHandler = (e:any, index: number, value: string) => {
     const { startTime } = this.props;
     this.durationValue = value;
-    this.props.inputChange('endTime', time.meetingDuration(startTime, value));
+    this.props.inputChange('endTime', Time.meetingDuration(startTime, value));
   }
 
   durationValue = '30 minutes';
@@ -43,12 +45,12 @@ export class EventDates extends React.Component<any, any> {
                   fullWidth={true}
                   container='inline'
                   mode='portrait'
-                  formatDate={time.materialDatePickFormat}
+                  formatDate={((date) => Time.materialDatePickFormat(date))}
                   autoOk={true}
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date });
                     this.props.inputChange(
-                      'startDate', time.dateFormatter(date)
+                      'startDate', Time.dateFormatter(date)
                     );
                     this.props.inputChange(
                       'endDate', time.dateFormatter(date)
@@ -59,10 +61,10 @@ export class EventDates extends React.Component<any, any> {
                 <SelectField
                   value={(() => {
                     return startTime || (() => {
-                      let remainder = 30 - (time.now.minute() % 30);
+                      let remainder = 30 - (Time.now.minute() % 30);
                       return this.props.inputChange(
                         'startTime',
-                        time.addMinutes(remainder)
+                        Time.addMinutes(remainder)
                       )
                     })()
                   })()}
@@ -87,12 +89,12 @@ export class EventDates extends React.Component<any, any> {
                   fullWidth={true}
                   container='inline'
                   mode='portrait'
-                  formatDate={time.materialDatePickFormat}
+                  formatDate={((date) => Time.materialDatePickFormat(date))}
                   autoOk={true}
                   onChange={(err: any, date: Date) => {
                     this.setState({ endDate: date })
                     this.props.inputChange(
-                      'endDate', time.dateFormatter(date)
+                      'endDate', Time.dateFormatter(date)
                     );
                   }} />
               </Col>
@@ -100,10 +102,10 @@ export class EventDates extends React.Component<any, any> {
                 <SelectField
                   value={(() => {
                     return endTime || (() => {
-                      let remainder = 30 - time.now.minute() % 30;
+                      let remainder = 30 - Time.now.minute() % 30;
                       return this.props.inputChange(
                         'endTime',
-                        time.addMinutes(remainder + 30)
+                        Time.addMinutes(remainder + 30)
                       )
                     })()
                   })()}
