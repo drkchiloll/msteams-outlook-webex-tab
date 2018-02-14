@@ -1,14 +1,12 @@
 import * as React from 'react';
 import { Grid, Row, Col } from 'react-flexbox-grid';
-import { time } from '../../middleware';
+import { Time } from '../../middleware';
 import { DatePicker, MenuItem, SelectField } from 'material-ui';
-
-import { Time } from '../../middleware/Time';
 
 export class EventDates extends React.Component<any, any> {
   constructor(props) {
     super(props);
-    this.state = { endDate: new Date() }
+    this.state = { endDate: Time.getDate() }
   }
 
   styles: any = {
@@ -40,7 +38,7 @@ export class EventDates extends React.Component<any, any> {
               <Col sm={3}>
                 <DatePicker
                   style={this.styles.datePicker}
-                  defaultDate={new Date(startDate)}
+                  defaultDate={Time.getDate(startDate)}
                   hintStyle={{ color: '#9575CD' }}
                   fullWidth={true}
                   container='inline'
@@ -53,7 +51,7 @@ export class EventDates extends React.Component<any, any> {
                       'startDate', Time.dateFormatter(date)
                     );
                     this.props.inputChange(
-                      'endDate', time.dateFormatter(date)
+                      'endDate', Time.dateFormatter(date)
                     )
                   }} />
               </Col>
