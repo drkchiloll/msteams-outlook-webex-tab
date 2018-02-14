@@ -1,6 +1,4 @@
 import * as Promise from 'bluebird';
-import * as moment from 'moment';
-import * as momenttz from 'moment-timezone';
 import { EventEmitter } from 'events';
 import * as Properties from '../../properties.json';
 import axios from 'axios';
@@ -12,7 +10,8 @@ const {
   msApp: {
     clientId, authority, scopes,
     webApi, tenant, redirectUri,
-    teamsUrl, contentUrl, baseUrl
+    teamsUrl, contentUrl, baseUrl,
+    headers
   }
 } = Properties;
 
@@ -54,12 +53,13 @@ export interface WebExJoinUrlParameters {
   meetingType?: string;
 }
 
+import { Time } from './index';
 import { graphServiceFactory, GraphService } from './msgraph-service';
 
 microsoftTeams.initialize();
 
 export class Api {
-  private headers: any = {'Content-Type':'application/json'};
+  private headers: any = headers;
   private webExMethod: string;
   token: string;
   signedInUser: string;
@@ -162,9 +162,9 @@ export class Api {
             return attendee;
           })
         })(),
-        startDate: moment(new Date(meeting.startDate)).format('MM/DD/YYYY HH:mm:ss'),
+        startDate: Time.webexFormat(meeting.startDate),
         duration: meeting.duration || 20,
-        timeZone: momenttz.tz.guess()
+        timeZone: Time.timezone
       }
     }
   }
@@ -223,18 +223,6 @@ export class Api {
     });
   }
 
-  msteamsResetObject = JSON.parse(JSON.stringify({
-    newEvent: false,
-    start: {dateTime:'', timeZone:''},
-    end: {dateTime:'', timeZone:''},
-    title: '',
-    loation: '',
-    startDate: new Date(),
-    startTime: '',
-    endDate: new Date(),
-    endTime: '',
-  }));
-
   msteamsOutlookTimeFinder({ token, user }) {}
 
   webExLaunchPersonalRoom(attendees) {
@@ -254,7 +242,7 @@ export class Api {
           return this.webExGenerateMeetingRequest({
             subject: 'Instant Scheduled Meeting',
             attendees: formattedAttendees,
-            startDate: moment().format('MM/DD/YYYY HH:mm:ss')
+            startDate: Time.webexFormat()
           });
         }).then(meetingRequest => {
           return this.webExCreateMeeting(meetingRequest);

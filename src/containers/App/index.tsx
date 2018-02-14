@@ -3,7 +3,7 @@ import * as Promise from 'bluebird';
 import * as style from './style.css';
 import * as openSocket from 'socket.io-client';
 import * as Properties from '../../../properties.json';
-import { Api, apiEmitter, time, Msal } from '../../middleware';
+import { Api, apiEmitter, Msal, Time } from '../../middleware';
 import { Drawer } from 'material-ui';
 import {
   WebExSettings, ScheduleMeeting, NagPopup,
@@ -36,7 +36,7 @@ export class App extends React.Component<any,any> {
     super(props);
     this.state = {
       webExSettingsEditor: false,
-      events: time.uidates(),
+      events: Time.uidates(),
       newMeeting: JSON.parse(JSON.stringify(initialState.newMeeting)),
       organizer: null,
       attendees: [],
@@ -107,7 +107,7 @@ export class App extends React.Component<any,any> {
         events[prop].sort((a: any, b: any) =>
           new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
         );
-        this.setState({ events });
+        this.setState({ events, disableSchedule: false });
       }
     });
     apiEmitter.on('event-service-success', () =>
@@ -218,8 +218,9 @@ export class App extends React.Component<any,any> {
     newMeeting[name] = value;
     if(name === 'newEvent' && !value) {
       this.setState(initialState)
+    } else {
+      this.setState({ newMeeting });
     }
-    this.setState({ newMeeting });
   }
 
   addParticipant = (attendee) => {
@@ -323,6 +324,7 @@ export class App extends React.Component<any,any> {
   createMeeting = () => {
     this.setState({ newMeetingBtnLabel: null });
     let { newMeeting, attendees } = JSON.parse(JSON.stringify(this.state));
+    // alert(JSON.stringify(newMeeting));
     let outlookEvent: any =
       this.api.graphService.generateMeetingRequest(newMeeting, attendees);
     const webExEvent: any = this.api.webExGenerateMeetingRequest({

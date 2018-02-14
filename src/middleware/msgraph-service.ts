@@ -1,10 +1,7 @@
 import axios from 'axios';
 import { AxiosInstance } from 'axios';
-import * as moment from 'moment';
-import * as momenttz from 'moment-timezone';
-import { time } from './time-helper';
 import * as Promise from 'bluebird';
-import { Api, apiEmitter } from './index';
+import { Api, apiEmitter, Time } from './index';
 import { Properties } from './props';
 const { msApp: {
   uri, webApi, connectorUrl, teamsUrl, clientId, contentUrl, baseUrl
@@ -49,8 +46,7 @@ export function graphServiceFactory(api: Api) {
     if(options.path.includes('photo')) requestoptions['responseType'] = 'arraybuffer';
     if(options.path === '/me/events' && options.method === 'get') {
       const transformRequest = [(data, headers) => {
-        headers.common['Prefer'] = 'outlook.timezone="'+
-          time.convertZones[momenttz.tz(momenttz.tz.guess()).format('z')]+'"';
+        headers.common['Prefer'] = `outlook.timezone="${Time.formatZone()}"`;
         return data;
       }];
       requestoptions['transformRequest'] = transformRequest;
@@ -128,10 +124,10 @@ export function graphServiceFactory(api: Api) {
     } catch(e) { subscription = undefined }
     let expiryDate:any;
     if(subscription) {
-      expiryDate = moment(api.subscription.expirationDateTime).format();
+      expiryDate = Time.MOMENT(api.subscription.expirationDateTime).format();
     }
     return !subscription ? false :
-      moment().utc().isAfter(moment(expiryDate))
+      Time.MOMENT().utc().isAfter(Time.MOMENT(expiryDate))
       ? false : true;
   };  
 
@@ -141,7 +137,7 @@ export function graphServiceFactory(api: Api) {
       notificationUrl: `${baseUrl}/api/webhook`,
       resource: 'me/events',
       clientState: 'subscription-identifier',
-      expirationDateTime: moment().add(1, 'days').utc().format()
+      expirationDateTime: Time.MOMENT().add(1, 'days').utc().format()
     };
     return this._axiosrequest(graphApi, {
       path: '/subscriptions',
@@ -193,11 +189,11 @@ export function graphServiceFactory(api: Api) {
     'start,end,organizer,attendees';
 
   graph.getEvents = function() {
-    const eventDateFilter = moment()
-      .startOf('day')
-      .subtract(1,'days')
-      .format('YYYY-MM-DDTHH:mm:ss');
-    let events: any = time.uidates();
+    const eventDateFilter = Time.MOMENT()
+      .startOf(Time.DAY)
+      .subtract(1, Time.DAYS)
+      .format(Time.outlookformat);
+    let events: any = Time.uidates();
     return this._axiosrequest(graphApi, {
       path: '/me/events',
       method: 'get',
@@ -218,8 +214,8 @@ export function graphServiceFactory(api: Api) {
             id, subject,
             isOrganizer, isCancelled,
             webExMeetingKey: bodyPreview || '',
-            startDate: moment(start.dateTime).format(time.calformat),
-            endDate: moment(end.dateTime).format(time.calformat),
+            startDate: Time.cal(start.dateTime),
+            endDate: Time.cal(end.dateTime),
             attendees: (() => {
               return attendees.map(attendee => ({
                 name: attendee.emailAddress.name || '',
@@ -229,7 +225,7 @@ export function graphServiceFactory(api: Api) {
               }))
             })()
           };
-          const prop = time.findEventProp(start.dateTime);
+          const prop = Time.findEventProp(start.dateTime);
           if(bodyPreview) {
             api.webExGetJoinUrl({
               meetingKey: bodyPreview,
@@ -272,7 +268,7 @@ export function graphServiceFactory(api: Api) {
         type: 'required'
       })
     ))(),
-    ...time.normalizeDates({
+    ...Time.normalizeDates({
         startDate: meeting.startDate,
         startTime: meeting.startTime,
         endDate: meeting.endDate,
@@ -287,6 +283,18 @@ export function graphServiceFactory(api: Api) {
       data: meeting
     });
   };
+
+  graph.resetMeeting = JSON.parse(JSON.stringify({
+    newEvent: false,
+    start: { dateTime: '', timeZone: '' },
+    end: { dateTime: '', timeZone: '' },
+    title: '',
+    loation: '',
+    startDate: new Date(),
+    startTime: '',
+    endDate: new Date(),
+    endTime: '',
+  }));
 
   graph.handleIncomingSocket = function(eventUpdates:any, events: any) {
     const deleteEvent = eventUpdates.value.find(change => change.changeType === 'deleted');
@@ -306,7 +314,7 @@ export function graphServiceFactory(api: Api) {
         });
     } else {
       return Promise.resolve({
-        newMeeting: api.msteamsResetObject,
+        newMeeting: this.resetMeeting,
         attendees: [],
         newMeetingBtnLabel: 'Schedule Meeting'
       });
